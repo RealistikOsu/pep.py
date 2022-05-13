@@ -44,7 +44,7 @@ on RealistikOsu, it may be a pain to scan through the code if you are attempting
 advise searching through `constants/rosuprivs.py` and `constants/serverPackets.py` for any references you would like to change.
 - Private database
 
-As expected, our variant uses our own database schema. A copy of our database schema (designed for use with [USSR](https://lgithub.com/realistikosu/ussr)) can be found [here!](https://github.com/RealistikOsu/USSR/blob/master/extras/db.sql)
+As expected, our variant uses our own database schema. A copy of our database schema (designed for use with [USSR](https://github.com/RealistikOsu/USSR)) can be found [here!](https://github.com/RealistikOsu/USSR/blob/master/extras/db.sql)
 
 Due to the old nature of the origin code, the age of the modules is **quite large**. This means that we do not benefit from any improvements,
 bugfixes or any other quality of life improvements of any new module updates. This is an issue with the whole Python based Ripple stack, and is 
