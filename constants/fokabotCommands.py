@@ -305,7 +305,9 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
 
     if config.NEW_RANKED_WEBHOOK:
         webhook = DiscordWebhook(url=config.NEW_RANKED_WEBHOOK)
-        embed = DiscordEmbed(description=f"{status_readable.title()} by {fro}", color=242424)
+        embed = DiscordEmbed(
+            description=f"{status_readable.title()} by {fro}", color=242424,
+        )
         embed.set_author(
             name=f"{map_name} was just {status_readable}",
             url=f"https://{config.SRV_DOMAIN}/beatmaps/{token.tillerino[0]}",
