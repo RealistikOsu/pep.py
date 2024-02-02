@@ -727,42 +727,6 @@ def unfreeze(fro, chan, message):
 
 
 @registerCommand(
-    trigger="!username",
-    syntax="<new username>",
-    privs=privileges.USER_DONOR,
-)
-def changeUsername(fro, chan, message):
-    """Lets you change your username."""
-    target = username_safe(fro)
-    new = " ".join(message)
-    newl = username_safe(new)
-
-    targetUserID = userUtils.getIDSafe(target)
-
-    if not targetUserID:
-        return f"{target}: User not found"
-
-    tokens = glob.tokens.getTokenFromUserID(targetUserID)
-    glob.db.execute(
-        "UPDATE `users`  SET `username` = %s, `username_safe` = %s WHERE `id` = %s",
-        (new, newl, targetUserID),
-    )
-    glob.db.execute(
-        "UPDATE `users_stats` SET `username` = %s WHERE `id` = %s",
-        (new, targetUserID),
-    )
-    glob.db.execute(
-        "UPDATE `rx_stats` SET `username` = %s WHERE `id` = %s",
-        (new, targetUserID),
-    )
-    glob.db.execute(
-        "UPDATE `ap_stats` SET `username` = %s WHERE `id` = %s",
-        (new, targetUserID),
-    )
-    tokens[0].kick(f"Your username has been changed to {new}. Please relog!")
-
-
-@registerCommand(
     trigger="!unrestrict",
     syntax="<target>",
     privs=privileges.ADMIN_BAN_USERS,

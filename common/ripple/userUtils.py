@@ -2077,49 +2077,6 @@ def safeUsername(username):
     return username.lower().strip().replace(" ", "_")
 
 
-def changeUsername(userID=0, oldUsername="", newUsername=""):
-    """
-    Change `userID`'s username to `newUsername` in database
-
-    :param userID: user id. Required only if `oldUsername` is not passed.
-    :param oldUsername: username. Required only if `userID` is not passed.
-    :param newUsername: new username. Can't contain spaces and underscores at the same time.
-    :raise: invalidUsernameError(), usernameAlreadyInUseError()
-    :return:
-    """
-    # Make sure new username doesn't have mixed spaces and underscores
-    if " " in newUsername and "_" in newUsername:
-        raise invalidUsernameError()
-
-    # Get safe username
-    newUsernameSafe = safeUsername(newUsername)
-
-    # Make sure this username is not already in use
-    if getIDSafe(newUsernameSafe) is not None:
-        raise usernameAlreadyInUseError()
-
-    # Get userID or oldUsername
-    if userID == 0:
-        userID = getID(oldUsername)
-    else:
-        oldUsername = getUsername(userID)
-
-    # Change username
-    glob.db.execute(
-        "UPDATE users SET username = %s, username_safe = %s WHERE id = %s LIMIT 1",
-        [newUsername, newUsernameSafe, userID],
-    )
-    glob.db.execute(
-        "UPDATE users_stats SET username = %s WHERE id = %s LIMIT 1",
-        [newUsername, userID],
-    )
-
-    # Empty redis username cache
-    # TODO: Le pipe woo woo
-    glob.redis.delete(f"ripple:userid_cache:{safeUsername(oldUsername)}")
-    glob.redis.delete(f"ripple:change_username_pending:{userID}")
-
-
 def removeFromLeaderboard(userID):
     """
     Removes userID from global and country leaderboards.

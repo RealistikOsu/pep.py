@@ -29,7 +29,6 @@ from objects import glob
 from pubSubHandlers import banHandler
 from pubSubHandlers import bot_msg_handler
 from pubSubHandlers import changePassword
-from pubSubHandlers import changeUsernameHandler
 from pubSubHandlers import disconnectHandler
 from pubSubHandlers import notificationHandler
 from pubSubHandlers import refreshPrivsHandler
@@ -192,7 +191,6 @@ def main():
             glob.redis,
             {
                 "peppy:disconnect": disconnectHandler.handler(),
-                "peppy:change_username": changeUsernameHandler.handler(),
                 "peppy:reload_settings": lambda x: x == b"reload"
                 and glob.banchoConf.reload(),
                 "peppy:update_cached_stats": updateStatsHandler.handler(),
