@@ -63,7 +63,7 @@ class Stream:
             log.info(f"{token} has left stream {self.name}")
             self.clients.remove(token)
 
-    def broadcast(self, data: bytes, but: Optional[list[str]] = None) -> None:
+     def broadcast(self, data: bytes, but: Optional[list[str]] = None) -> None:
         """
         Send some data to all (or some) clients connected to this stream
 
@@ -77,8 +77,6 @@ class Stream:
             token = glob.tokens.tokens.get(token_str)
             if token and token.token not in but:
                 token.enqueue(data)
-            else:
-                self.removeClient(token=token_str)
 
     def dispose(self) -> None:
         """
