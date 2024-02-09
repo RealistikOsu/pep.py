@@ -589,6 +589,9 @@ class Match:
                 # Send updated match data
                 self.sendUpdates()
 
+                # Auto-join user to channel
+                user.joinChannel(glob.channels.channels[f"#multi_{self.matchID}"])
+
                 # Console output
                 log.info(
                     f"MPROOM{self.matchID}: {user.username} joined the room",
