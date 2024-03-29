@@ -1833,6 +1833,8 @@ def logHardware(
                 (user_id, hashes[2], hashes[3], hashes[4]),
             )
 
+        matching_users = list(matching_users)
+
         if matching_users:
             # User has a matching hwid, ban him
             log.warning(
