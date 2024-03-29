@@ -32,7 +32,7 @@ streams = StreamList()
 tokens = TokenList()
 channels = ChannelList()
 matches = MatchList()
-cached_passwords: dict = {}
+cached_passwords: dict[str, str] = {}
 chatFilters = None
 pool: ThreadPool
 busyThreads = 0
