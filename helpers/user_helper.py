@@ -29,12 +29,12 @@ def verify_password(user_id: int, password: str) -> bool:
         password (str): The user's password hashed with MD5.
     """
 
-    # Check if we already cached them, for speed benefit.
     passw_db = glob.db.fetch(
         "SELECT password_md5 FROM users WHERE id = %s LIMIT 1",
         (user_id,),
     )["password_md5"]
 
+    # Check if we already cached them, for speed benefit.
     if passw_db in glob.cached_passwords:
         return glob.cached_passwords[passw_db] == password
 
