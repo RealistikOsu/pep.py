@@ -42,7 +42,7 @@ def verify_password(user_id: int, password: str) -> bool:
     # Cache it for later
     if res:
         glob.cached_passwords[passw_db] = password
-        
+
     return res
 
 
