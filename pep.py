@@ -28,7 +28,6 @@ from objects import fokabot
 from objects import glob
 from pubSubHandlers import banHandler
 from pubSubHandlers import bot_msg_handler
-from pubSubHandlers import changePassword
 from pubSubHandlers import disconnectHandler
 from pubSubHandlers import notificationHandler
 from pubSubHandlers import refreshPrivsHandler
@@ -198,7 +197,6 @@ def main():
                 "peppy:ban": banHandler.handler(),
                 "peppy:notification": notificationHandler.handler(),
                 "peppy:refresh_privs": refreshPrivsHandler.handler(),
-                "peppy:change_pass": changePassword.handler(),
                 "peppy:bot_msg": bot_msg_handler.handler(),
             },
         ).start()
