@@ -30,20 +30,19 @@ def verify_password(user_id: int, password: str) -> bool:
     """
 
     # Check if we already cached them, for speed benefit.
-    passw = glob.cached_passwords.get(user_id)
-    if passw:
-        return password == passw
-
-    # Nope. Sad. Bcrypt time.
     passw_db = glob.db.fetch(
         "SELECT password_md5 FROM users WHERE id = %s LIMIT 1",
         (user_id,),
     )["password_md5"]
 
+    if passw_db in glob.cached_passwords:
+        return glob.cached_passwords[passw_db] == password
+
     res = bcrypt.checkpw(password.encode(), passw_db.encode())
     # Cache it for later
     if res:
-        glob.cached_passwords[user_id] = password
+        glob.cached_passwords[passw_db] = password
+        
     return res
 
 
