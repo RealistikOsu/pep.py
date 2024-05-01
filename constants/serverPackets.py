@@ -166,6 +166,17 @@ def user_stats(userID):
     if userToken is None:
         return b""
 
+    totalScore = userToken.totalScore
+    rankedScore = userToken.rankedScore
+    performancePoints = userToken.pp
+
+    # Since performance points are a signed int, send PP as the score (since this mostly
+    # will occur in RX and RX players don't care about score).
+    if performancePoints >= 32767:
+        totalScore = rankedScore = performancePoints
+        performancePoints = 0
+        
+
     return packetHelper.buildPacket(
         packetIDs.server_userStats,
         (
@@ -176,12 +187,12 @@ def user_stats(userID):
             (userToken.actionMods, dataTypes.SINT32),
             (userToken.gameMode, dataTypes.BYTE),
             (userToken.beatmapID, dataTypes.SINT32),
-            (userToken.rankedScore, dataTypes.UINT64),
+            (rankedScore, dataTypes.UINT64),
             (userToken.accuracy, dataTypes.FFLOAT),
             (userToken.playcount, dataTypes.UINT32),
-            (userToken.totalScore, dataTypes.UINT64),
+            (totalScore, dataTypes.UINT64),
             (userToken.gameRank, dataTypes.UINT32),
-            (userToken.pp if 32767 >= userToken.pp > 0 else 0, dataTypes.SINT16),
+            (performancePoints, dataTypes.SINT16),
         ),
     )
 
