@@ -181,7 +181,7 @@ def user_stats(userID):
             (userToken.playcount, dataTypes.UINT32),
             (userToken.totalScore, dataTypes.UINT64),
             (userToken.gameRank, dataTypes.UINT32),
-            (userToken.pp if 65535 >= userToken.pp > 0 else 0, dataTypes.UINT16),
+            (userToken.pp if 32767 >= userToken.pp > 0 else 0, dataTypes.SINT16),
         ),
     )
 
