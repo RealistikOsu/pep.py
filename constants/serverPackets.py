@@ -90,7 +90,7 @@ def bancho_priv(supporter, GMT, tournamentStaff):
         result |= userRanks.TOURNAMENT_STAFF
     return packetHelper.buildPacket(
         packetIDs.server_supporterGMT,
-        ((result, dataTypes.UINT32),),
+        ((result, dataTypes.SINT32),),
     )
 
 
@@ -155,7 +155,7 @@ def user_presence(userID, force=False):
             (userRank, dataTypes.BYTE),
             (longitude, dataTypes.FFLOAT),
             (latitude, dataTypes.FFLOAT),
-            (gameRank, dataTypes.UINT32),
+            (gameRank, dataTypes.SINT32),
         ),
     )
 
@@ -166,32 +166,31 @@ def user_stats(userID):
     if userToken is None:
         return b""
 
-    totalScore = userToken.totalScore
     rankedScore = userToken.rankedScore
     performancePoints = userToken.pp
 
     # Since performance points are a signed int, send PP as the score (since this mostly
     # will occur in RX and RX players don't care about score).
     if performancePoints >= 32767:
-        totalScore = rankedScore = performancePoints
+        rankedScore = performancePoints
         performancePoints = 0
         
 
     return packetHelper.buildPacket(
         packetIDs.server_userStats,
         (
-            (userID, dataTypes.UINT32),
+            (userID, dataTypes.SINT32),
             (userToken.actionID, dataTypes.BYTE),
             (userToken.actionText, dataTypes.STRING),
             (userToken.actionMd5, dataTypes.STRING),
             (userToken.actionMods, dataTypes.SINT32),
             (userToken.gameMode, dataTypes.BYTE),
             (userToken.beatmapID, dataTypes.SINT32),
-            (rankedScore, dataTypes.UINT64),
+            (rankedScore, dataTypes.SINT64),
             (userToken.accuracy, dataTypes.FFLOAT),
-            (userToken.playcount, dataTypes.UINT32),
-            (totalScore, dataTypes.UINT64),
-            (userToken.gameRank, dataTypes.UINT32),
+            (userToken.playcount, dataTypes.SINT32),
+            (userToken.totalScore, dataTypes.SINT64),
+            (userToken.gameRank, dataTypes.SINT32),
             (performancePoints, dataTypes.SINT16),
         ),
     )
@@ -247,7 +246,7 @@ def channel_kicked(chan):
 def silenced_notify(userID):
     return packetHelper.buildPacket(
         packetIDs.server_userSilenced,
-        ((userID, dataTypes.UINT32),),
+        ((userID, dataTypes.SINT32),),
     )
 
 
@@ -337,7 +336,7 @@ def match_start(matchID: int):
 def match_dispose(matchID):
     return packetHelper.buildPacket(
         packetIDs.server_disposeMatch,
-        ((matchID, dataTypes.UINT32),),
+        ((matchID, dataTypes.SINT32),),
     )
 
 
@@ -399,7 +398,7 @@ def match_complete():
 def match_player_fail(slotID):
     return packetHelper.buildPacket(
         packetIDs.server_matchPlayerFailed,
-        ((slotID, dataTypes.UINT32),),
+        ((slotID, dataTypes.SINT32),),
     )
 
 
@@ -431,7 +430,7 @@ def notification(message):
 def server_restart(msUntilReconnection):
     return packetHelper.buildPacket(
         packetIDs.server_restart,
-        ((msUntilReconnection, dataTypes.UINT32),),
+        ((msUntilReconnection, dataTypes.SINT32),),
     )
 
 
