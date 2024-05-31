@@ -6,11 +6,11 @@ import uuid
 from typing import Optional
 from typing import TYPE_CHECKING
 
+import settings
 from common.constants import actions
 from common.constants import gameModes
 from common.constants import privileges
 from common.ripple import userUtils
-from config import config
 from constants import exceptions
 from constants import serverPackets
 from constants.rosuprivs import ADMIN_PRIVS
@@ -165,7 +165,7 @@ class UserToken:
         """
 
         # Stop queuing stuff to the bot so we dont run out of mem
-        if self.userID == config.SRV_BOT_ID:
+        if self.userID == settings.PS_BOT_USER_ID:
             return
 
         with self._bufferLock:
@@ -485,7 +485,7 @@ class UserToken:
         """
 
         if author is None:
-            author = config.SRV_BOT_ID
+            author = settings.PS_BOT_USER_ID
 
         if seconds is None:
             # Get silence expire from db if needed
@@ -611,7 +611,7 @@ class UserToken:
         chat.sendMessage(
             glob.BOT_NAME,
             self.username,
-            f"Your account has been restricted! Please contact the {config.SRV_NAME} staff through our Discord server for more info!",
+            f"Your account has been restricted! Please contact the {settings.PS_NAME} staff through our Discord server for more info!",
         )
 
     def notify_unrestricted(self) -> None:

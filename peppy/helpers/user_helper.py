@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import bcrypt
 
-from common.constants import privileges
-from common.ripple.userUtils import removeFromLeaderboard
-from config import config
 from objects import glob
 
 

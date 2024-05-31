@@ -18,13 +18,13 @@ import requests
 from discord_webhook import DiscordEmbed
 from discord_webhook import DiscordWebhook
 
+import settings
 from common import generalUtils
 from common.constants import gameModes
 from common.constants import mods
 from common.constants import privileges
 from common.ripple import userUtils
 from common.ripple.userUtils import restrict_with_log
-from config import config
 from constants import exceptions
 from constants import matchModModes
 from constants import matchScoringTypes
@@ -77,7 +77,7 @@ def refresh_bmap(md5: str) -> None:
 
 def calc_completion(bmapid, n300, n100, n50, miss):
     bmap = osupyparser.OsuFile(
-        f"{config.MAPS_DIRECTORY}{bmapid}.osu",
+        f"{settings.DATA_BEATMAP_DIRECTORY}/{bmapid}.osu",
     ).parse_file()
 
     total_hits = int(n300 + n100 + n50 + miss)
@@ -298,21 +298,21 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
 
     if set_check:  # In theory it should work, practically i have no fucking clue.
         map_name = res["song_name"].split("[")[0].strip()
-        beatmap_url = f"the beatmap set [https://{config.SRV_DOMAIN}/beatmaps/{token.tillerino[0]} {map_name}]"
+        beatmap_url = f"the beatmap set [https://{settings.PS_DOMAIN}/beatmaps/{token.tillerino[0]} {map_name}]"
     else:
         map_name = res["song_name"]
-        beatmap_url = f"the beatmap [https://{config.SRV_DOMAIN}/beatmaps/{token.tillerino[0]} {map_name}]"
+        beatmap_url = f"the beatmap [https://{settings.PS_DOMAIN}/beatmaps/{token.tillerino[0]} {map_name}]"
 
-    if config.NEW_RANKED_WEBHOOK:
-        webhook = DiscordWebhook(url=config.NEW_RANKED_WEBHOOK)
+    if settings.DISCORD_RANKED_WEBHOOK_URL:
+        webhook = DiscordWebhook(url=settings.DISCORD_RANKED_WEBHOOK_URL)
         embed = DiscordEmbed(
             description=f"{status_readable.title()} by {fro}",
             color=242424,
         )
         embed.set_author(
             name=f"{map_name} was just {status_readable}",
-            url=f"https://{config.SRV_DOMAIN}/beatmaps/{token.tillerino[0]}",
-            icon_url=f"https://a.{config.SRV_DOMAIN}/{token.userID}",
+            url=f"https://{settings.PS_DOMAIN}/beatmaps/{token.tillerino[0]}",
+            icon_url=f"https://a.{settings.PS_DOMAIN}/{token.userID}",
         )
         embed.set_footer(text="via pep.py!")
         embed.set_image(
@@ -324,7 +324,7 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
     chat.sendMessage(
         glob.BOT_NAME,
         "#announce",
-        f"[https://{config.SRV_DOMAIN}/u/{token.userID} {fro}] has {status_readable} {beatmap_url}",
+        f"[https://{settings.PS_DOMAIN}/u/{token.userID} {fro}] has {status_readable} {beatmap_url}",
     )
     return f"Successfully {status_readable} a map."
 
@@ -455,8 +455,8 @@ def kick(fro, chan, message):
 def fokabotReconnect(fro, chan, message):
     """Forces the bot to reconnect."""
     # Check if the bot is already connected
-    if glob.tokens.getTokenFromUserID(config.SRV_BOT_ID) is not None:
-        return f"{glob.BOT_NAME} is already connected to {config.SRV_NAME}!"
+    if glob.tokens.getTokenFromUserID(settings.PS_BOT_USER_ID) is not None:
+        return f"{glob.BOT_NAME} is already connected to {settings.PS_NAME}!"
 
     # Bot is not connected, connect it
     fokabot.connect()
@@ -676,8 +676,8 @@ def freeze(fro, chan, message):
     if targetToken is not None:
         targetToken.enqueue(
             serverPackets.notification(
-                f"You have been frozen! The {config.SRV_NAME} staff team has found you "
-                f"suspicious and would like to request a liveplay. Visit {config.SRV_DOMAIN} for more info.",
+                f"You have been frozen! The {settings.PS_NAME} staff team has found you "
+                f"suspicious and would like to request a liveplay. Visit {settings.PS_DOMAIN} for more info.",
             ),
         )
 
@@ -718,7 +718,7 @@ def unfreeze(fro, chan, message):
         targetToken.enqueue(
             serverPackets.notification(
                 "Your account has been unfrozen! You have proven your legitemacy. "
-                f"Thank you and have fun playing on {config.SRV_NAME}!",
+                f"Thank you and have fun playing on {settings.PS_NAME}!",
             ),
         )
 
@@ -813,7 +813,7 @@ def systemStatus(fro, chan, message):
 
     return "\n".join(
         (
-            f"---> {config.SRV_NAME} <---",
+            f"---> {settings.PS_NAME} <---",
             " - Realtime Server -",
             "> Running the RealistikOsu pep.py fork.",
             f"> Online Users: {data['connectedUsers']}",
@@ -1034,8 +1034,8 @@ def tillerinoLast(fro, chan, message):
     token.tillerino[2] = fc_acc
     oppaiData = getPPMessage(token.userID, just_data=True)
 
-    user_embed = f"[https://{config.SRV_DOMAIN}/u/{token.userID} {fro}]"
-    map_embed = f"[http://{config.SRV_DOMAIN}/beatmaps/{data['bid']} {data['sn']}]"
+    user_embed = f"[https://{settings.PS_DOMAIN}/u/{token.userID} {fro}]"
+    map_embed = f"[http://{settings.PS_DOMAIN}/beatmaps/{data['bid']} {data['sn']}]"
 
     response = [
         f"{user_embed} | {map_embed} +{generalUtils.readableMods(data['mods'])}",
@@ -1356,7 +1356,7 @@ def multiplayer(fro, chan, message):
                 "That user is not connected to bancho right now.",
             )
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
-        _match.invite(config.SRV_BOT_ID, userID)
+        _match.invite(settings.PS_BOT_USER_ID, userID)
         token.enqueue(
             serverPackets.notification(
                 f"Please accept the invite you've just received from {glob.BOT_NAME} to "

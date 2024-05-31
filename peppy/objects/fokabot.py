@@ -5,9 +5,9 @@ import time
 import traceback
 from importlib import reload
 
+import settings
 from common.constants import actions
 from common.ripple import userUtils
-from config import config
 from constants import fokabotCommands
 from constants import serverPackets
 from logger import log
@@ -20,10 +20,10 @@ def connect():
 
     :return:
     """
-    glob.BOT_NAME = userUtils.getUsername(config.SRV_BOT_ID)
-    token = glob.tokens.addToken(config.SRV_BOT_ID)
+    glob.BOT_NAME = userUtils.getUsername(settings.PS_BOT_USER_ID)
+    token = glob.tokens.addToken(settings.PS_BOT_USER_ID)
     token.actionID = actions.WATCHING
-    token.actionText = f"over {config.SRV_NAME}!"
+    token.actionText = f"over {settings.PS_NAME}!"
     token.pp = 69
     token.accuracy = 0.69
     token.playcount = 69
@@ -31,8 +31,8 @@ def connect():
     token.timeOffset = 0
     token.country = 2  # this is retared, fuck it im keeping it as europe, couldnt find the uk as its ordered stupidly
     token.location = (39.01955903386848, 125.75276158057767)  # Pyongyang red square
-    glob.streams.broadcast("main", serverPackets.user_presence(config.SRV_BOT_ID))
-    glob.streams.broadcast("main", serverPackets.user_stats(config.SRV_BOT_ID))
+    glob.streams.broadcast("main", serverPackets.user_presence(settings.PS_BOT_USER_ID))
+    glob.streams.broadcast("main", serverPackets.user_stats(settings.PS_BOT_USER_ID))
 
 
 def reload_commands():
@@ -46,7 +46,7 @@ def disconnect():
 
     :return:
     """
-    glob.tokens.deleteToken(glob.tokens.getTokenFromUserID(config.SRV_BOT_ID))
+    glob.tokens.deleteToken(glob.tokens.getTokenFromUserID(settings.PS_BOT_USER_ID))
 
 
 def fokabotResponse(fro, chan, message):
@@ -102,7 +102,7 @@ def fokabotResponse(fro, chan, message):
                 f"There was an issue while running '{cmd.trigger}' command. \nTraceback: {tb}",
             )
             resp = [
-                f"There was issue while processing your command, please report this to {config.SRV_NAME} developer!",
+                f"There was issue while processing your command, please report this to {settings.PS_NAME} developer!",
             ]
             # Debugging for staff
             if user.admin:

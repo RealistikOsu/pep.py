@@ -12,13 +12,13 @@ except ImportError:
 
 from typing import Optional
 
+import settings
 from common import generalUtils
 from common.constants import gameModes, mods
 from common.constants import privileges
 from logger import log
 from common.ripple import scoreUtils
 from objects import glob
-from config import config
 
 
 def getBeatmapTime(beatmapID):
@@ -1431,7 +1431,7 @@ def silence(userID, seconds, silenceReason, author=None):
     """
 
     if author is None:
-        author = config.SRV_BOT_ID
+        author = settings.PS_BOT_USER_ID
     # db qurey
     silenceEndTime = int(time.time()) + seconds
     glob.db.execute(
@@ -2239,7 +2239,7 @@ def insert_ban_log(
     """
 
     if from_id is None:
-        from_id = config.SRV_BOT_ID
+        from_id = settings.PS_BOT_USER_ID
 
     if prefix:
         detail = "pep.py Autoban: " + detail
@@ -2275,7 +2275,7 @@ def restrict_with_log(
     """
 
     if from_id is None:
-        from_id = config.SRV_BOT_ID
+        from_id = settings.PS_BOT_USER_ID
 
     glob.db.execute(
         f"UPDATE users SET privileges = privileges & ~{privileges.USER_PUBLIC}, "
@@ -2308,7 +2308,7 @@ def ban_with_log(
     """
 
     if from_id is None:
-        from_id = config.SRV_BOT_ID
+        from_id = settings.PS_BOT_USER_ID
 
     glob.db.execute(
         f"UPDATE users SET privileges = 0, "

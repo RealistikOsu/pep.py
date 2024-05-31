@@ -7,7 +7,7 @@ import time
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from config import config
+import settings
 from constants import dataTypes
 from constants import matchModModes
 from constants import matchScoringTypes
@@ -521,7 +521,7 @@ class Match:
             chat.sendMessage(
                 glob.BOT_NAME,
                 chanName,
-                f"Hey! Welcome to the {config.SRV_NAME} multiplayer! If you ever encounter "
+                f"Hey! Welcome to the {settings.PS_NAME} multiplayer! If you ever encounter "
                 "a map you are unable to download through our direct, you can use the "
                 "!mirror command to get an external download link!",
             )
@@ -802,7 +802,7 @@ class Match:
             return
 
         # BOT IS BUSY!!!
-        if to == config.SRV_BOT_ID:
+        if to == settings.PS_BOT_USER_ID:
             chat.sendMessage(
                 glob.BOT_NAME,
                 froToken.username,

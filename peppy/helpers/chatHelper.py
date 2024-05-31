@@ -5,8 +5,8 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
 
+import settings
 from common.ripple import userUtils
-from config import config
 from constants import exceptions
 from constants import serverPackets
 from events import logoutEvent
@@ -348,7 +348,7 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
             log_message_db(token, recipientToken.userID, message)
 
         # Spam protection (ignore the bot)
-        if token.userID > config.SRV_BOT_ID or not token.admin:
+        if token.userID > settings.PS_BOT_USER_ID or not token.admin:
             token.spamProtection()
 
         # Some bot message

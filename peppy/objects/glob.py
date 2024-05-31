@@ -2,24 +2,24 @@
 from __future__ import annotations
 
 import time
-from multiprocessing.pool import ThreadPool
+from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 from redis import Redis
 
+import settings
 from collection.channels import ChannelList
 from collection.matches import MatchList
 from collection.streams import StreamList
 from collection.tokens import TokenList
 from common.db.dbConnector import DatabasePool
-from config import config
 from objects.banchoConfig import banchoConfig
 
 if TYPE_CHECKING:
     from helpers.status_helper import StatusManager
 
 # Consts.
-BOT_NAME = config.SRV_BOT_NAME
+BOT_NAME = settings.PS_BOT_USERNAME
 
 __version__ = "3.1.0"
 
@@ -34,7 +34,7 @@ channels = ChannelList()
 matches = MatchList()
 cached_passwords: dict[str, str] = {}
 chatFilters = None
-pool: ThreadPool
+pool: ThreadPoolExecutor
 busyThreads = 0
 
 debug = False

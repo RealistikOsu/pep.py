@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import traceback
-from multiprocessing.pool import ThreadPool
+from concurrent.futures import ThreadPoolExecutor
 
 import redis
 import tornado.gen
@@ -11,6 +11,7 @@ import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 
+import settings
 from common.db import dbConnector
 from common.redis import pubSub
 from handlers import api_status
@@ -65,19 +66,20 @@ def main():
         try:
             log.info("Connecting to MySQL database... ")
             glob.db = dbConnector.DatabasePool(
-                glob.config.DB_HOST,
-                glob.config.DB_USERNAME,
-                glob.config.DB_PASSWORD,
-                glob.config.DB_DATABASE,
-                glob.config.DB_WORKERS,
+                host=settings.MYSQL_HOST,
+                port=settings.MYSQL_PORT,
+                username=settings.MYSQL_USER,
+                password=settings.MYSQL_PASSWORD,
+                database=settings.MYSQL_DATABASE,
+                initialSize=settings.MYSQL_POOL_SIZE,
             )
 
             log.info("Connecting to redis... ")
             glob.redis = redis.Redis(
-                glob.config.REDIS_HOST,
-                glob.config.REDIS_PORT,
-                glob.config.REDIS_DB,
-                glob.config.REDIS_PASSWORD,
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                password=settings.REDIS_PASSWORD,
+                db=settings.REDIS_DB,
             )
             glob.redis.ping()
         except Exception:
@@ -118,15 +120,12 @@ def main():
         glob.tokens.deleteBanchoSessions()
         log.info("Complete!")
 
-        # Create threads pool
-        try:
-            log.info("Creating threads pool... ")
-            glob.pool = ThreadPool(glob.config.THREADS_COUNT)
-            log.info("Complete!")
-        except ValueError:
-            log.error(
-                "Error while creating threads pool. Please check your config.ini and run the server again",
-            )
+        # Create thread pool
+        log.info("Creating thread pool...")
+        glob.pool = ThreadPoolExecutor(
+            max_workers=settings.HTTP_THREAD_COUNT,
+        )
+        log.info("Complete!")
 
         # Start fokabot
         log.info("Connecting RealistikBot...")
@@ -181,7 +180,7 @@ def main():
 
         # Server start message and console output
         log.info(
-            f"pep.py listening for HTTP(s) clients on 127.0.0.1:{glob.config.PORT}...",
+            f"pep.py listening for HTTP(s) clients on {settings.HTTP_ADDRESS}:{settings.HTTP_PORT}...",
         )
 
         # Connect to pubsub channels
@@ -206,7 +205,7 @@ def main():
         }
 
         # Start tornado
-        glob.application.listen(port=glob.config.PORT, address="127.0.0.1")
+        glob.application.listen(port=settings.HTTP_PORT, address=settings.HTTP_ADDRESS)
         tornado.ioloop.IOLoop.instance().start()
     finally:
         system.dispose()

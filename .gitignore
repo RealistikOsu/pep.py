@@ -1,6 +1,5 @@
 **/__pycache__
 **/build
-config.ini
 filters.txt
 .data
 .idea
@@ -8,5 +7,4 @@ redistest.py
 *.c
 *.so
 .pyenv
-config.json
 .vscode/

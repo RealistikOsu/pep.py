@@ -1,9 +1,9 @@
 """ Contains functions used to write specific server packets to byte streams """
 from __future__ import annotations
 
+import settings
 from common.constants import privileges
 from common.ripple import userUtils
-from config import config
 from constants import dataTypes
 from constants import packetIDs
 from constants import userRanks
@@ -30,7 +30,7 @@ def force_update():
 
 def login_banned() -> bytes:
     return login_reply(-1) + notification(
-        f"Your account has been banned from {config.SRV_NAME}! "
+        f"Your account has been banned from {settings.PS_NAME}! "
         "Please contact a member of staff for more information.",
     )
 
@@ -41,7 +41,7 @@ def login_error():
 
 def login_cheats() -> bytes:
     return login_reply(-1) + notification(
-        f"Your account has been restricted from {config.SRV_NAME}! "
+        f"Your account has been restricted from {settings.PS_NAME}! "
         "Please contact a member of staff for more information.",
     )
 

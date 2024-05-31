@@ -6,8 +6,8 @@ import random
 import tornado.gen
 import tornado.web
 
+import settings
 from common.web import requestsManager
-from config import config
 from objects import glob
 
 
@@ -18,10 +18,10 @@ class handler(requestsManager.asyncRequestHandler):
         """Handles the server info endpoint for the Aeris client."""
         resp_dict = {
             "version": 0,
-            "motd": f"{config.SRV_NAME}\n"
+            "motd": f"{settings.PS_NAME}\n"
             + random.choice(glob.banchoConf.config["Quotes"]),
             "onlineUsers": len(glob.tokens.tokens),
             "icon": "https://ussr.pl/static/image/newlogo2.png",
-            "botID": config.SRV_BOT_ID,
+            "botID": settings.PS_BOT_USER_ID,
         }
         self.write(json.dumps(resp_dict))
