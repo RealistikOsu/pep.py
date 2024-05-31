@@ -1,6 +1,5 @@
 bcrypt==4.0.0
 colorama==0.4.5
-cython==0.29.32
 discord-webhook==0.17.0
 mysqlclient==2.0.3
 osupyparser

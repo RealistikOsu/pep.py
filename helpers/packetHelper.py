@@ -1,15 +1,15 @@
 import struct
 from constants import dataTypes
 
-cpdef bytearray uleb128Encode(int num):
+def uleb128Encode(num: int) -> bytearray:
     """
     Encode an int to uleb128
 
     :param num: int to encode
     :return: bytearray with encoded number
     """
-    cdef bytearray arr = bytearray()
-    cdef int length = 0
+    arr = bytearray()
+    length = 0
 
     if num == 0:
         return bytearray(b"\x00")
@@ -23,28 +23,29 @@ cpdef bytearray uleb128Encode(int num):
 
     return arr
 
-cpdef list uleb128Decode(bytes num):
+def uleb128Decode(num: bytes) -> tuple[int, int]:
     """
     Decode a uleb128 to int
 
     :param num: encoded uleb128 int
     :return: (total, length)
     """
-    cdef int shift = 0
-    cdef list arr = [0,0]    #total, length
-    cdef int b
+
+    shift = 0
+    value = 0
+    length = 0
 
     while True:
-        b = num[arr[1]]
-        arr[1]+=1
-        arr[0] |= int(b & 127) << shift
+        b = num[length]
+        length += 1
+        value |= int(b & 127) << shift
         if b & 128 == 0:
             break
         shift += 7
 
-    return arr
+    return value, length
 
-cpdef unpackData(bytes data, int dataType):
+def unpackData(data: bytes, dataType: int):
     """
     Unpacks a single section of a packet.
 
@@ -75,7 +76,7 @@ cpdef unpackData(bytes data, int dataType):
     # Unpack
     return struct.unpack(unpackType, bytes(data))[0]
 
-cpdef bytes packData(__data, int dataType):
+def packData(__data, dataType: int) -> bytes:
     """
     Packs a single section of a packet.
 
@@ -83,9 +84,9 @@ cpdef bytes packData(__data, int dataType):
     :param dataType: data type
     :return: packed bytes
     """
-    cdef bytes data = bytes()    # data to return
-    cdef bint pack = True        # if True, use pack. False only with strings
-    cdef str packType
+    data = bytes()    # data to return
+    pack = True        # if True, use pack. False only with strings
+    packType = ""
 
     # Get right pack Type
     if dataType == dataTypes.BBYTES:
@@ -137,7 +138,7 @@ cpdef bytes packData(__data, int dataType):
 
     return data
 
-cpdef bytes buildPacket(int __packet, __packetData = None):
+def buildPacket(__packet: int, __packetData = None) -> bytes:
     """
     Builds a packet
 
@@ -149,9 +150,9 @@ cpdef bytes buildPacket(int __packet, __packetData = None):
     if __packetData is None:
         __packetData = []
     # Set some variables
-    cdef bytes packetData = bytes()
-    cdef int packetLength = 0
-    cdef bytes packetBytes = bytes()
+    packetData = bytes()
+    packetLength = 0
+    packetBytes = bytes()
 
     # Pack packet data
     for i in __packetData:
@@ -167,7 +168,7 @@ cpdef bytes buildPacket(int __packet, __packetData = None):
     packetBytes += packetData                        # packet data
     return packetBytes
 
-cpdef int readPacketID(bytes stream):
+def readPacketID(stream: bytes) -> int:
     """
     Read packetID (first two bytes) from a packet
 
@@ -176,7 +177,7 @@ cpdef int readPacketID(bytes stream):
     """
     return unpackData(stream[0:2], dataTypes.UINT16)
 
-cpdef int readPacketLength(bytes stream):
+def readPacketLength(stream: bytes) -> int:
     """
     Read packet data length (3:7 bytes) from a packet
 
@@ -186,7 +187,7 @@ cpdef int readPacketLength(bytes stream):
     return unpackData(stream[3:7], dataTypes.UINT32)
 
 
-cpdef readPacketData(bytes stream, list structure=None, bint hasFirstBytes = True):
+def readPacketData(stream: bytes, structure = None, hasFirstBytes = True):
     """
     Read packet data from `stream` according to `structure`
     :param stream: packet bytes
@@ -200,10 +201,9 @@ cpdef readPacketData(bytes stream, list structure=None, bint hasFirstBytes = Tru
         structure = []
 
     # Read packet ID (first 2 bytes)
-    cdef dict data = {}
+    data = {}
 
     # Skip packet ID and packet length if needed
-    cdef start, end
     if hasFirstBytes:
         end = 7
         start = 7
@@ -212,8 +212,6 @@ cpdef readPacketData(bytes stream, list structure=None, bint hasFirstBytes = Tru
         start = 0
 
     # Read packet
-    cdef list i
-    cdef bint unpack
     for i in structure:
         start = end
         unpack = True
