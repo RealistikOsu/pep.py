@@ -9,3 +9,4 @@ redistest.py
 *.so
 .pyenv
 config.json
+.vscode/
