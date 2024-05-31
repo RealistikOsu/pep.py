@@ -26,13 +26,13 @@ from logger import log
 from objects import banchoConfig
 from objects import fokabot
 from objects import glob
-from pubSubHandlers import banHandler
-from pubSubHandlers import bot_msg_handler
-from pubSubHandlers import disconnectHandler
-from pubSubHandlers import notificationHandler
-from pubSubHandlers import refreshPrivsHandler
-from pubSubHandlers import updateSilenceHandler
-from pubSubHandlers import updateStatsHandler
+from redis_handlers import banHandler
+from redis_handlers import bot_msg_handler
+from redis_handlers import disconnectHandler
+from redis_handlers import notificationHandler
+from redis_handlers import refreshPrivsHandler
+from redis_handlers import updateSilenceHandler
+from redis_handlers import updateStatsHandler
 
 
 def make_app():
@@ -49,7 +49,6 @@ def make_app():
 
 
 def main():
-    """A main function to execute code."""
     try:
         # Server start
         consoleHelper.printServerStartHeader(True)
