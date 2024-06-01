@@ -8,3 +8,4 @@ redistest.py
 *.so
 .pyenv
 .vscode/
+.env
