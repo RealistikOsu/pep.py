@@ -1,7 +1,3 @@
-all: build run
-
+#!/usr/bin/make
 build:
-	python3.9 setup.py build_ext --inplace
-
-run:
-	python3.9 pep.py
+	docker build -t peppy:latest .
