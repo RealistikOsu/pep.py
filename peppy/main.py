@@ -6,6 +6,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 
 import redis
+import redis.exceptions
 import tornado.gen
 import tornado.httpserver
 import tornado.ioloop
