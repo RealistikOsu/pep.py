@@ -5,8 +5,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
-from redis import Redis
-
 import settings
 from collection.channels import ChannelList
 from collection.matches import MatchList
@@ -14,6 +12,7 @@ from collection.streams import StreamList
 from collection.tokens import TokenList
 from common.db.dbConnector import DatabasePool
 from objects.banchoConfig import banchoConfig
+from redis import Redis
 
 if TYPE_CHECKING:
     from helpers.status_helper import StatusManager

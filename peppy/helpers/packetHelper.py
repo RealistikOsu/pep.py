@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import struct
+
 from constants import dataTypes
+
 
 def uleb128Encode(num: int) -> bytearray:
     """
@@ -19,9 +23,10 @@ def uleb128Encode(num: int) -> bytearray:
         num >>= 7
         if num != 0:
             arr[length] |= 128
-        length+=1
+        length += 1
 
     return arr
+
 
 def uleb128Decode(num: bytes) -> tuple[int, int]:
     """
@@ -44,6 +49,7 @@ def uleb128Decode(num: bytes) -> tuple[int, int]:
         shift += 7
 
     return value, length
+
 
 def unpackData(data: bytes, dataType: int):
     """
@@ -76,6 +82,7 @@ def unpackData(data: bytes, dataType: int):
     # Unpack
     return struct.unpack(unpackType, bytes(data))[0]
 
+
 def packData(__data, dataType: int) -> bytes:
     """
     Packs a single section of a packet.
@@ -84,8 +91,8 @@ def packData(__data, dataType: int) -> bytes:
     :param dataType: data type
     :return: packed bytes
     """
-    data = bytes()    # data to return
-    pack = True        # if True, use pack. False only with strings
+    data = b''  # data to return
+    pack = True  # if True, use pack. False only with strings
     packType = ""
 
     # Get right pack Type
@@ -138,7 +145,8 @@ def packData(__data, dataType: int) -> bytes:
 
     return data
 
-def buildPacket(__packet: int, __packetData = None) -> bytes:
+
+def buildPacket(__packet: int, __packetData=None) -> bytes:
     """
     Builds a packet
 
@@ -150,9 +158,9 @@ def buildPacket(__packet: int, __packetData = None) -> bytes:
     if __packetData is None:
         __packetData = []
     # Set some variables
-    packetData = bytes()
+    packetData = b''
     packetLength = 0
-    packetBytes = bytes()
+    packetBytes = b''
 
     # Pack packet data
     for i in __packetData:
@@ -162,11 +170,12 @@ def buildPacket(__packet: int, __packetData = None) -> bytes:
     packetLength = len(packetData)
 
     # Return packet as bytes
-    packetBytes += struct.pack("<h", __packet)        # packet id (int16)
-    packetBytes += bytes(b"\x00")                    # unused byte
-    packetBytes += struct.pack("<l", packetLength)    # packet lenght (iint32)
-    packetBytes += packetData                        # packet data
+    packetBytes += struct.pack("<h", __packet)  # packet id (int16)
+    packetBytes += b"\x00"  # unused byte
+    packetBytes += struct.pack("<l", packetLength)  # packet lenght (iint32)
+    packetBytes += packetData  # packet data
     return packetBytes
+
 
 def readPacketID(stream: bytes) -> int:
     """
@@ -176,6 +185,7 @@ def readPacketID(stream: bytes) -> int:
     :return: packet ID
     """
     return unpackData(stream[0:2], dataTypes.UINT16)
+
 
 def readPacketLength(stream: bytes) -> int:
     """
@@ -187,7 +197,7 @@ def readPacketLength(stream: bytes) -> int:
     return unpackData(stream[3:7], dataTypes.UINT32)
 
 
-def readPacketData(stream: bytes, structure = None, hasFirstBytes = True):
+def readPacketData(stream: bytes, structure=None, hasFirstBytes=True):
     """
     Read packet data from `stream` according to `structure`
     :param stream: packet bytes
@@ -221,15 +231,20 @@ def readPacketData(stream: bytes, structure = None, hasFirstBytes = True):
             unpack = False
 
             # Read length (uInt16)
-            length = unpackData(stream[start:start+2], dataTypes.UINT16)
+            length = unpackData(stream[start : start + 2], dataTypes.UINT16)
 
             # Read all int inside list
             data[i[0]] = []
-            for j in range(0,length):
-                data[i[0]].append(unpackData(stream[start+2+(4*j):start+2+(4*(j+1))], dataTypes.SINT32))
+            for j in range(0, length):
+                data[i[0]].append(
+                    unpackData(
+                        stream[start + 2 + (4 * j) : start + 2 + (4 * (j + 1))],
+                        dataTypes.SINT32,
+                    ),
+                )
 
             # Update end
-            end = start+2+(4*length)
+            end = start + 2 + (4 * length)
         elif i[1] == dataTypes.STRING:
             # String, don't unpack
             unpack = False
@@ -238,23 +253,23 @@ def readPacketData(stream: bytes, structure = None, hasFirstBytes = True):
             if stream[start] == 0:
                 # Empty string
                 data[i[0]] = ""
-                end = start+1
+                end = start + 1
             else:
                 # Non empty string
                 # Read length and calculate end
-                length = uleb128Decode(stream[start+1:])
-                end = start+length[0]+length[1]+1
+                length = uleb128Decode(stream[start + 1 :])
+                end = start + length[0] + length[1] + 1
 
                 # Read bytes
-                data[i[0]] = stream[start+1+length[1]:end].decode()
+                data[i[0]] = stream[start + 1 + length[1] : end].decode()
         elif i[1] == dataTypes.BYTE:
-            end = start+1
+            end = start + 1
         elif i[1] in (dataTypes.UINT16, dataTypes.SINT16):
-            end = start+2
+            end = start + 2
         elif i[1] in (dataTypes.UINT32, dataTypes.SINT32, dataTypes.FFLOAT):
-            end = start+4
+            end = start + 4
         elif i[1] in (dataTypes.UINT64, dataTypes.SINT64):
-            end = start+8
+            end = start + 8
 
         # Unpack if needed
         if unpack:

@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 _BOOLEAN_STRINGS = ("true", "1", "yes")
+
+
 def _parse_bool(value: str) -> bool:
     return value.strip().lower() in _BOOLEAN_STRINGS
 
@@ -14,7 +16,7 @@ def _parse_bool(value: str) -> bool:
 def _parse_int_list(value: str) -> list[int]:
     if not value:
         return []
-    
+
     return [int(i) for i in value.strip().replace(", ", ",").split(",")]
 
 

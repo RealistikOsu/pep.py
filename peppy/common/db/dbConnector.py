@@ -6,9 +6,8 @@ from typing import Any
 from typing import Optional
 
 import MySQLdb
-from MySQLdb.connections import Connection
-
 from logger import log
+from MySQLdb.connections import Connection
 
 
 class Worker:
@@ -75,7 +74,6 @@ class ConnectionPool:
             user=self.username,
             password=self.password,
             database=self.database,
-
             autocommit=True,
             charset="utf8",
             use_unicode=True,
@@ -172,7 +170,9 @@ class DatabasePool:
         database: str,
         initialSize: int,
     ) -> None:
-        self.pool = ConnectionPool(host, port, username, password, database, initialSize)
+        self.pool = ConnectionPool(
+            host, port, username, password, database, initialSize,
+        )
 
     def execute(self, query: str, params: object = ()) -> int:
         """

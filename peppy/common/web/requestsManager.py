@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
+import settings
 import tornado.gen
 import tornado.web
-from tornado.ioloop import IOLoop
-
-import settings
 from logger import log
 from objects import glob
+from tornado.ioloop import IOLoop
 
 
 class asyncRequestHandler(tornado.web.RequestHandler):
@@ -58,7 +57,10 @@ class asyncRequestHandler(tornado.web.RequestHandler):
         """
 
         # Check if they are connecting through a switcher
-        if "ppy.sh" in self.request.headers.get("Host", "") or not settings.HTTP_USING_CLOUDFLARE:
+        if (
+            "ppy.sh" in self.request.headers.get("Host", "")
+            or not settings.HTTP_USING_CLOUDFLARE
+        ):
             return self.request.headers.get("X-Real-IP")
 
         return self.request.headers.get("CF-Connecting-IP")

@@ -8,7 +8,6 @@ import threading
 import time
 
 import psutil
-
 from constants import serverPackets
 from helpers import consoleHelper
 from logger import log

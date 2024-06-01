@@ -1,16 +1,17 @@
+from __future__ import annotations
+
 import datetime
 import sys
 import traceback
 
+import settings
 import tornado.gen
 import tornado.web
-
-import settings
-from logger import log
 from common.web import requestsManager
 from constants import exceptions
 from constants import packetIDs
 from constants import serverPackets
+from events import beatmapInfoRequest
 from events import cantSpectateEvent
 from events import changeActionEvent
 from events import changeMatchModsEvent
@@ -48,13 +49,13 @@ from events import setAwayMessageEvent
 from events import spectateFramesEvent
 from events import startSpectatingEvent
 from events import stopSpectatingEvent
-from events import userPanelRequestEvent
-from events import userStatsRequestEvent
-from events import tournamentMatchInfoRequestEvent
 from events import tournamentJoinMatchChannelEvent
 from events import tournamentLeaveMatchChannelEvent
-from events import beatmapInfoRequest
+from events import tournamentMatchInfoRequestEvent
+from events import userPanelRequestEvent
+from events import userStatsRequestEvent
 from helpers import packetHelper
+from logger import log
 from objects import glob
 
 # Placing this here so we do not have to register this every conn.
@@ -129,7 +130,7 @@ class handler(requestsManager.asyncRequestHandler):
 
         # Server's token string and request data
         responseTokenString = ""
-        responseData = bytes()
+        responseData = b''
 
         if requestTokenString is None:
             # No token, first request. Handle login.
@@ -157,21 +158,31 @@ class handler(requestsManager.asyncRequestHandler):
                     # Get packet ID, data length and data
                     packetID = packetHelper.readPacketID(leftData)
                     dataLength = packetHelper.readPacketLength(leftData)
-                    packetData = requestData[pos:(pos+dataLength+7)]
+                    packetData = requestData[pos : (pos + dataLength + 7)]
 
                     # Process/ignore packet
                     if packetID != 4:
                         if packetID in eventHandler:
-                            if not userToken.restricted or (userToken.restricted and packetID in packetsRestricted):
+                            if not userToken.restricted or (
+                                userToken.restricted and packetID in packetsRestricted
+                            ):
                                 eventHandler[packetID].handle(userToken, packetData)
                             else:
-                                log.warning("Ignored packet id from {} ({}) (user is restricted)".format(requestTokenString, packetID))
+                                log.warning(
+                                    "Ignored packet id from {} ({}) (user is restricted)".format(
+                                        requestTokenString, packetID,
+                                    ),
+                                )
                         else:
-                            log.warning("Unknown packet id from {} ({})".format(requestTokenString, packetID))
+                            log.warning(
+                                "Unknown packet id from {} ({})".format(
+                                    requestTokenString, packetID,
+                                ),
+                            )
 
                     # Update pos so we can read the next stacked packet
                     # +7 because we add packet ID bytes, unused byte and data length bytes
-                    pos += dataLength+7
+                    pos += dataLength + 7
 
                 # Token queue built, send it
                 responseTokenString = userToken.token
@@ -181,9 +192,11 @@ class handler(requestsManager.asyncRequestHandler):
                 responseData = serverPackets.server_restart(1)
                 responseData += serverPackets.notification(
                     f"You don't seem to be logged into {settings.PS_NAME} anymore... "
-                    "This is common during server restarts, trying to log you back in."
+                    "This is common during server restarts, trying to log you back in.",
                 )
-                log.warning("Received unknown token! This is normal during server restarts. Reconnecting them.")
+                log.warning(
+                    "Received unknown token! This is normal during server restarts. Reconnecting them.",
+                )
             finally:
                 # Unlock token
                 if userToken is not None:
@@ -197,7 +210,6 @@ class handler(requestsManager.asyncRequestHandler):
 
         # Send server's response to client
         # We don't use token object because we might not have a token (failed login)
-
 
         self.write(responseData)
 
@@ -214,5 +226,5 @@ class handler(requestsManager.asyncRequestHandler):
     def asyncGet(self):
         # We are updating this to be full stealth
         self.write(
-            """Loading site... <meta http-equiv="refresh" content="0; URL='https://www.youtube.com/watch?v=dQw4w9WgXcQ'" />"""
+            """Loading site... <meta http-equiv="refresh" content="0; URL='https://www.youtube.com/watch?v=dQw4w9WgXcQ'" />""",
         )

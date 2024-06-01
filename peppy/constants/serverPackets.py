@@ -174,7 +174,6 @@ def user_stats(userID):
     if performancePoints >= 32767:
         rankedScore = performancePoints
         performancePoints = 0
-        
 
     return packetHelper.buildPacket(
         packetIDs.server_userStats,

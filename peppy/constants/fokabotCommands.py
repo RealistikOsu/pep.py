@@ -15,9 +15,6 @@ from typing import Optional
 
 import osupyparser
 import requests
-from discord_webhook import DiscordEmbed
-from discord_webhook import DiscordWebhook
-
 import settings
 from common import generalUtils
 from common.constants import gameModes
@@ -32,6 +29,8 @@ from constants import matchTeams
 from constants import matchTeamTypes
 from constants import serverPackets
 from constants import slotStatuses
+from discord_webhook import DiscordEmbed
+from discord_webhook import DiscordWebhook
 from helpers import chatHelper as chat
 from helpers import systemHelper
 from helpers import user_helper

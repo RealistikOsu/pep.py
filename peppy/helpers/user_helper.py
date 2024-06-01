@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import bcrypt
-
 from objects import glob
 
 

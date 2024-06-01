@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from geoip2 import database
-
 import settings
+from geoip2 import database
 
 db_reader = database.Reader(settings.DATA_GEOLOCATION_PATH)
 

@@ -5,7 +5,6 @@ import time
 from typing import Optional
 
 import redis
-
 import settings
 from common.ripple import userUtils
 from constants import serverPackets

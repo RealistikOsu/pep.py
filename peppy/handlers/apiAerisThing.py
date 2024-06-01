@@ -3,10 +3,9 @@ from __future__ import annotations
 import json
 import random
 
+import settings
 import tornado.gen
 import tornado.web
-
-import settings
 from common.web import requestsManager
 from objects import glob
 

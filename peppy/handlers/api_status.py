@@ -4,7 +4,6 @@ import json
 
 import tornado.gen
 import tornado.web
-
 from common.web import requestsManager
 from logger import log
 from objects import glob

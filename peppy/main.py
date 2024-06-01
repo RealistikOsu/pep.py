@@ -5,14 +5,12 @@ import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 
-import redis
 import redis.exceptions
+import settings
 import tornado.gen
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
-
-import settings
 from common.db import dbConnector
 from common.redis import pubSub
 from handlers import api_status
