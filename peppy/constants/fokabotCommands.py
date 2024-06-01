@@ -1792,7 +1792,7 @@ def bless(fro: str, chan: str, message: str) -> str:
         return "This user is not online, and may not be blessed."
 
     # Acquire bible from file.
-    with open("bible.txt") as stream:
+    with open(settings.DATA_BIBLE_PATH) as stream:
         holy_bible = stream.read()
 
     # Split the bible into 2000 char chunks (str writer and reader limit)
@@ -1854,8 +1854,11 @@ def troll(fro: str, chan: str, message: str) -> str:
 def py(fro: str, chan: str, message: str) -> str:
     """Allows for code execution inside server (DANGEROUS COMMAND)"""
 
+    if not settings.PS_ENABLE_PY_COMMAND:
+        return "This command has been disabled on this server."
+
     user = glob.tokens.getTokenFromUsername(username_safe(fro), safe=True)
-    if not user.userID in (1000, 1180):
+    if not user.userID in settings.PS_PY_COMMAND_WHITELIST:
         return "This command is reserved for head developers only!"
 
     if not message[0]:

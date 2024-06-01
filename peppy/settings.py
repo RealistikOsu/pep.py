@@ -11,6 +11,13 @@ def _parse_bool(value: str) -> bool:
     return value.strip().lower() in _BOOLEAN_STRINGS
 
 
+def _parse_int_list(value: str) -> list[int]:
+    if not value:
+        return []
+    
+    return [int(i) for i in value.strip().replace(", ", ",").split(",")]
+
+
 HTTP_PORT = int(os.environ["HTTP_PORT"])
 HTTP_ADDRESS = os.environ["HTTP_ADDRESS"]
 HTTP_THREAD_COUNT = int(os.environ["HTTP_THREAD_COUNT"])
@@ -36,5 +43,9 @@ PS_DOMAIN = os.environ["PS_DOMAIN"]
 PS_BOT_USERNAME = os.environ["PS_BOT_USERNAME"]
 PS_BOT_USER_ID = int(os.environ["PS_BOT_USER_ID"])
 PS_MINIMUM_CLIENT_YEAR = int(os.environ["PS_MINIMUM_CLIENT_YEAR"])
+PS_ENABLE_PY_COMMAND = _parse_bool(os.environ["PS_ENABLE_PY_COMMAND"])
+PS_PY_COMMAND_WHITELIST = _parse_int_list(os.environ)
 
 DATA_BEATMAP_DIRECTORY = os.environ["DATA_BEATMAP_DIRECTORY"]
+DATA_GEOLOCATION_PATH = os.environ["DATA_GEOLOCATION_PATH"]
+DATA_BIBLE_PATH = os.environ["DATA_BIBLE_PATH"]
