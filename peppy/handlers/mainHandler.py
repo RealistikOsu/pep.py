@@ -130,7 +130,7 @@ class handler(requestsManager.asyncRequestHandler):
 
         # Server's token string and request data
         responseTokenString = ""
-        responseData = b''
+        responseData = b""
 
         if requestTokenString is None:
             # No token, first request. Handle login.
@@ -170,13 +170,15 @@ class handler(requestsManager.asyncRequestHandler):
                             else:
                                 log.warning(
                                     "Ignored packet id from {} ({}) (user is restricted)".format(
-                                        requestTokenString, packetID,
+                                        requestTokenString,
+                                        packetID,
                                     ),
                                 )
                         else:
                             log.warning(
                                 "Unknown packet id from {} ({})".format(
-                                    requestTokenString, packetID,
+                                    requestTokenString,
+                                    packetID,
                                 ),
                             )
 

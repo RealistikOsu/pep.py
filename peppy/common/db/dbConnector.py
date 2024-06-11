@@ -171,7 +171,12 @@ class DatabasePool:
         initialSize: int,
     ) -> None:
         self.pool = ConnectionPool(
-            host, port, username, password, database, initialSize,
+            host,
+            port,
+            username,
+            password,
+            database,
+            initialSize,
         )
 
     def execute(self, query: str, params: object = ()) -> int:

@@ -23,17 +23,16 @@ IP2LOCATION_BASE_API = "https://api.ip2location.io/"
 
 class Ip2LocationApi:
     def __init__(
-            self,
-            api_key: str,
-            *,
-            api_root_url: str = IP2LOCATION_BASE_API,
-            silent_fail: bool = False,
+        self,
+        api_key: str,
+        *,
+        api_root_url: str = IP2LOCATION_BASE_API,
+        silent_fail: bool = False,
     ) -> None:
         self.root_url = api_root_url
         self.api_key = api_key
         self.silent_fail = silent_fail
 
-    
     def query_ip(self, ip_address: str) -> IPQueryResult | None:
         response = requests.get(self.root_url, params={
             "key": self.api_key,

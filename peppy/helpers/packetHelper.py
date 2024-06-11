@@ -91,7 +91,7 @@ def packData(__data, dataType: int) -> bytes:
     :param dataType: data type
     :return: packed bytes
     """
-    data = b''  # data to return
+    data = b""  # data to return
     pack = True  # if True, use pack. False only with strings
     packType = ""
 
@@ -158,9 +158,9 @@ def buildPacket(__packet: int, __packetData=None) -> bytes:
     if __packetData is None:
         __packetData = []
     # Set some variables
-    packetData = b''
+    packetData = b""
     packetLength = 0
-    packetBytes = b''
+    packetBytes = b""
 
     # Pack packet data
     for i in __packetData:

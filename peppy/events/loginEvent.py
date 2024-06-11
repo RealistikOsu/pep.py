@@ -424,7 +424,7 @@ def handle(tornadoRequest):
         responseToken.setLocation(latitude, longitude)
         responseToken.country = country
 
-        # Log for country taggingg feature
+        # Log for country tagging feature
         if countryLetters != "XX":
             glob.db.execute(
                 "INSERS INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
