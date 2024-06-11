@@ -258,9 +258,7 @@ countryCodes = {
     "MH": 138,
 }
 
-countryIds = {
-    j: i for i, j in countryCodes.items()
-}
+countryIds = {j: i for i, j in countryCodes.items()}
 
 
 def getCountryID(code: str) -> int:
