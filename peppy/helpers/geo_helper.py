@@ -258,31 +258,28 @@ countryCodes = {
     "MH": 138,
 }
 
+countryIds = {j: i for i, j in countryCodes.items()}
 
-def getCountryID(code):
+
+def getCountryID(code: str) -> int:
     """
     Get osu country ID from country letters
 
-    :param code: country letters (eg: US)
+    :param code: country letters (eg: PL)
     :return: country osu code
     """
 
-    ccode = countryCodes.get(code)
-    return ccode if ccode is not None else 0
+    return countryCodes.get(code, 0)
 
 
-def getCountryLetters(code):
+def getCountryLetters(code: int) -> str:
     """
     Get country letters from osu country ID
 
     :param code: osu country ID
     :return: country letters (XX if not found)
     """
-    for key, value in countryCodes.items():
-        if value == code:
-            return key
-
-    return "XX"
+    return countryIds.get(code, "XX")
 
 
 def get_full(ip: str) -> tuple[float, float, str]:

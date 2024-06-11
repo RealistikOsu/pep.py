@@ -15,7 +15,7 @@ from constants import serverPackets
 from helpers import chatHelper as chat
 from helpers import geo_helper
 from helpers.geo_helper import get_full
-from helpers.realistik_stuff import Timer
+from helpers.timing import Timer
 from helpers.user_helper import get_country
 from helpers.user_helper import set_country
 from helpers.user_helper import verify_password
@@ -407,13 +407,30 @@ def handle(tornadoRequest):
 
         # Localise the user based off IP.
         # Get location and country from IP
-        latitude, longitude, countryLetters = get_full(requestIP)
+        geolocation = glob.geolocation_api.query_ip(requestIP)
+        if geolocation is None:
+            latitude = longitude = 0
+            countryLetters = "XX"
+            is_vpn = False
+        else:
+            latitude = geolocation.latitude
+            longitude = geolocation.longitude
+            countryLetters = geolocation.country_code
+            is_vpn = geolocation.is_proxy
 
         country = geo_helper.getCountryID(countryLetters)
 
         # Set location and country
         responseToken.setLocation(latitude, longitude)
         responseToken.country = country
+
+        # Log for country tagging feature
+        if countryLetters != "XX":
+            glob.db.execute(
+                "INSERS INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
+                "VALUES (%s, %s, %s, %s)",
+                (userID, countryLetters, is_vpn, requestIP),
+            )
 
         # Set country in db if user has no country (first bancho login)
         if user_db["country"] == "XX":

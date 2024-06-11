@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
 import settings
+from adapters import Ip2LocationApi
 from collection.channels import ChannelList
 from collection.matches import MatchList
 from collection.streams import StreamList
@@ -41,3 +42,7 @@ restarting = False
 
 startTime = int(time.time())
 user_statuses: StatusManager
+geolocation_api = Ip2LocationApi(
+    settings.IP2LOCATION_API_KEY,
+    silent_fail=True,
+)
