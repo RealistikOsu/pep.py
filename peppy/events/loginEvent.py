@@ -407,7 +407,14 @@ def handle(tornadoRequest):
 
         # Localise the user based off IP.
         # Get location and country from IP
-        latitude, longitude, countryLetters = get_full(requestIP)
+        geolocation = glob.geolocation_api.query_ip(requestIP)
+        if geolocation is None:
+            latitude = longitude = 0
+            countryLetters = "XX"
+        else:
+            latitude = geolocation.latitude
+            longitude = geolocation.longitude
+            countryLetters = geolocation.country_code
 
         country = geo_helper.getCountryID(countryLetters)
 
