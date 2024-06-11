@@ -34,15 +34,18 @@ class Ip2LocationApi:
         self.silent_fail = silent_fail
 
     def query_ip(self, ip_address: str) -> IPQueryResult | None:
-        response = requests.get(self.root_url, params={
-            "key": self.api_key,
-            "ip": ip_address,
-        })
+        response = requests.get(
+            self.root_url,
+            params={
+                "key": self.api_key,
+                "ip": ip_address,
+            },
+        )
 
         response.raise_for_status()
 
         query_response = response.json()
-        
+
         return IPQueryResult(
             ip=query_response["ip"],
             country_code=query_response["country_code"],
