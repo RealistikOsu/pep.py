@@ -20,8 +20,6 @@ class IPQueryResult:
 IP2LOCATION_BASE_API = "https://api.ip2location.io/"
 """The default root endpoint for the IP2Location API."""
 
-class GeolocationException(Exception):
-    ...
 
 class Ip2LocationApi:
     def __init__(
@@ -37,20 +35,14 @@ class Ip2LocationApi:
 
     
     def query_ip(self, ip_address: str) -> IPQueryResult | None:
-        query_response = requests.get(self.root_url, params={
+        response = requests.get(self.root_url, params={
             "key": self.api_key,
             "ip": ip_address,
-        }).json()
+        })
 
-        if "error" in query_response:
-            if self.silent_fail:
-                return None
-            
-            error_text = query_response["error"]["error_message"]
-            error_code = query_response["error"]["error_code"]
-            raise GeolocationException(
-                f"Failed to geolocate with error {error_text!r} ({error_code})"
-            )
+        response.raise_for_status()
+
+        query_response = response.json()
         
         return IPQueryResult(
             ip=query_response["ip"],
