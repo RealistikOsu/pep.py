@@ -411,16 +411,26 @@ def handle(tornadoRequest):
         if geolocation is None:
             latitude = longitude = 0
             countryLetters = "XX"
+            is_vpn = False
         else:
             latitude = geolocation.latitude
             longitude = geolocation.longitude
             countryLetters = geolocation.country_code
+            is_vpn = geolocation.is_proxy
 
         country = geo_helper.getCountryID(countryLetters)
 
         # Set location and country
         responseToken.setLocation(latitude, longitude)
         responseToken.country = country
+
+        # Log for country taggingg feature
+        if countryLetters != "XX":
+            glob.db.execute(
+                "INSERS INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
+                "VALUES (%s, %s, %s, %s)",
+                (userID, countryLetters, is_vpn, requestIP),
+            )
 
         # Set country in db if user has no country (first bancho login)
         if user_db["country"] == "XX":
