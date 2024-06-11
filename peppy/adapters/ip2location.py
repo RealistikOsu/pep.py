@@ -12,6 +12,8 @@ class IPQueryResult:
     country_code: str
     country_name: str
     region_name: str
+    latitude: float
+    longitude: float
     is_proxy: bool
 
 
@@ -55,5 +57,7 @@ class Ip2LocationApi:
             country_code=query_response["country_code"],
             country_name=query_response["country_name"],
             region_name=query_response["region_name"],
+            latitude=query_response["latitude"],
+            longitude=query_response["longitude"],
             is_proxy=query_response["is_proxy"],
         )
