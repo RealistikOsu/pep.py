@@ -8,7 +8,6 @@ WORKDIR /app
 COPY ./resources/geolocation_database.mmdb /app/resources/geolocation_database.mmdb
 COPY ./resources/bible.txt /app/resources/bible.txt
 
-ENV DATA_GEOLOCATION_PATH=/app/resources/geolocation_database.mmdb
 ENV DATA_BIBLE_PATH=/app/resources/bible.txt
 
 # Requirements

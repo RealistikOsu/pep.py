@@ -14,7 +14,6 @@ from constants import exceptions
 from constants import serverPackets
 from helpers import chatHelper as chat
 from helpers import geo_helper
-from helpers.geo_helper import get_full
 from helpers.timing import Timer
 from helpers.user_helper import get_country
 from helpers.user_helper import set_country
