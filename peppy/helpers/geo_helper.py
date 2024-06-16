@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-import settings
-from geoip2 import database
-
-db_reader = database.Reader(settings.DATA_GEOLOCATION_PATH)
-
 countryCodes = {
     "IO": 104,
     "PS": 178,
@@ -280,27 +275,3 @@ def getCountryLetters(code: int) -> str:
     :return: country letters (XX if not found)
     """
     return countryIds.get(code, "XX")
-
-
-def get_full(ip: str) -> tuple[float, float, str]:
-    """Fetches the user's full geolocation data and returns the imperative
-    info retrieved.
-
-    Note:
-            This uses a really quick IP lookup database. use as a replacement to
-        full on API requests.
-
-    Args:
-            ip (str): The IP of the user to fetch the info for.
-
-    Returns:
-            Tuple of data in order of `(lat, long, country)`
-    """
-
-    try:
-        city = db_reader.city(ip)
-
-        return city.location.latitude, city.location.longitude, city.country.iso_code  # type: ignore L
-
-    except Exception:
-        return 0.0, 0.0, "XX"
