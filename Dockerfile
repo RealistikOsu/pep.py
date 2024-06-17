@@ -5,7 +5,6 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # NOTE: These are handled as image resources, and therefore moved into the image.
-COPY ./resources/geolocation_database.mmdb /app/resources/geolocation_database.mmdb
 COPY ./resources/bible.txt /app/resources/bible.txt
 
 ENV DATA_BIBLE_PATH=/app/resources/bible.txt
