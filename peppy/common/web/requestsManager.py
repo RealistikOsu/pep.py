@@ -77,7 +77,10 @@ def runBackground(data, callback):
     """
     func, args, kwargs = data
 
-    glob.pool.submit(func, *args, **kwargs)
+    def _wrap():
+        callback(func(*args, **kwargs))
+
+    glob.pool.submit(func)
 
 
 def checkArguments(arguments, requiredArguments):
