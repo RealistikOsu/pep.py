@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 import sys
 import traceback
 
-import tornado
-import tornado.web
 import tornado.gen
-from tornado.ioloop import IOLoop
-from objects import glob
+import tornado.web
 from logger import log
+from objects import glob
 from raven.contrib.tornado import SentryMixin
+from tornado.ioloop import IOLoop
+
 
 class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
     """
@@ -16,11 +18,14 @@ class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
     use asyncGet() and asyncPost() instead of get() and post().
     Done. I'm not kidding.
     """
+
     @tornado.web.asynchronous
     @tornado.gen.engine
     def get(self, *args, **kwargs):
         try:
-            yield tornado.gen.Task(runBackground, (self.asyncGet, tuple(args), dict(kwargs)))
+            yield tornado.gen.Task(
+                runBackground, (self.asyncGet, tuple(args), dict(kwargs)),
+            )
         finally:
             if not self._finished:
                 self.finish()
@@ -29,7 +34,9 @@ class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
     @tornado.gen.engine
     def post(self, *args, **kwargs):
         try:
-            yield tornado.gen.Task(runBackground, (self.asyncPost, tuple(args), dict(kwargs)))
+            yield tornado.gen.Task(
+                runBackground, (self.asyncPost, tuple(args), dict(kwargs)),
+            )
         finally:
             if not self._finished:
                 self.finish()
@@ -50,6 +57,7 @@ class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
         """
         return self.request.headers.get("X-Real-IP")
 
+
 def runBackground(data, callback):
     """
     Run a function in the background.
@@ -60,9 +68,12 @@ def runBackground(data, callback):
     :return:
     """
     func, args, kwargs = data
+
     def _callback(result):
         IOLoop.instance().add_callback(lambda: callback(result))
+
     glob.pool.apply_async(func, args, kwargs, _callback)
+
 
 def checkArguments(arguments, requiredArguments):
     """
@@ -77,6 +88,7 @@ def checkArguments(arguments, requiredArguments):
             return False
     return True
 
+
 def printArguments(t):
     """
     Print passed arguments, for debug purposes
@@ -85,5 +97,5 @@ def printArguments(t):
     """
     msg = "ARGS::"
     for i in t.request.arguments:
-        msg += "{}={}\r\n".format(i, t.get_argument(i))
+        msg += f"{i}={t.get_argument(i)}\r\n"
     log.debug(msg)
