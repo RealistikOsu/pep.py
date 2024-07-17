@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import traceback
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing.pool import ThreadPool
 
 import redis.exceptions
 import settings
@@ -121,9 +121,7 @@ def main():
 
         # Create thread pool
         log.info("Creating thread pool...")
-        glob.pool = ThreadPoolExecutor(
-            max_workers=settings.HTTP_THREAD_COUNT,
-        )
+        glob.pool = ThreadPool(settings.HTTP_THREAD_COUNT)
         log.info("Complete!")
 
         # Start fokabot

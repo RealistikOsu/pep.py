@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import time
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing.pool import ThreadPool
 from typing import TYPE_CHECKING
 
 import settings
@@ -34,7 +34,7 @@ channels = ChannelList()
 matches = MatchList()
 cached_passwords: dict[str, str] = {}
 chatFilters = None
-pool: ThreadPoolExecutor
+pool: ThreadPool
 busyThreads = 0
 
 debug = False

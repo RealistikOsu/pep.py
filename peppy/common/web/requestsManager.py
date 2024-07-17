@@ -1,31 +1,26 @@
-from __future__ import annotations
+import sys
+import traceback
 
-from typing import Optional
-
-import settings
-import tornado.gen
+import tornado
 import tornado.web
-from logger import log
-from objects import glob
+import tornado.gen
 from tornado.ioloop import IOLoop
+from objects import glob
+from logger import log
+from raven.contrib.tornado import SentryMixin
 
-
-class asyncRequestHandler(tornado.web.RequestHandler):
+class asyncRequestHandler(SentryMixin, tornado.web.RequestHandler):
     """
     Tornado asynchronous request handler
     create a class that extends this one (requestHelper.asyncRequestHandler)
     use asyncGet() and asyncPost() instead of get() and post().
     Done. I'm not kidding.
     """
-
     @tornado.web.asynchronous
     @tornado.gen.engine
     def get(self, *args, **kwargs):
         try:
-            yield tornado.gen.Task(
-                runBackground,
-                (self.asyncGet, tuple(args), dict(kwargs)),
-            )
+            yield tornado.gen.Task(runBackground, (self.asyncGet, tuple(args), dict(kwargs)))
         finally:
             if not self._finished:
                 self.finish()
@@ -34,37 +29,26 @@ class asyncRequestHandler(tornado.web.RequestHandler):
     @tornado.gen.engine
     def post(self, *args, **kwargs):
         try:
-            yield tornado.gen.Task(
-                runBackground,
-                (self.asyncPost, tuple(args), dict(kwargs)),
-            )
+            yield tornado.gen.Task(runBackground, (self.asyncPost, tuple(args), dict(kwargs)))
         finally:
             if not self._finished:
                 self.finish()
 
-    def asyncGet(self, *args, **kwargs) -> None:
+    def asyncGet(self, *args, **kwargs):
         self.send_error(405)
 
-    def asyncPost(self, *args, **kwargs) -> None:
+    def asyncPost(self, *args, **kwargs):
         self.send_error(405)
 
-    def getRequestIP(self) -> Optional[str]:
+    def getRequestIP(self):
         """
-        If the server is configured to use Cloudflare, returns the `CF-Connecting-IP` header.
-        Otherwise, returns the `X-Real-IP` header.
+        Return CF-Connecting-IP (request IP when under cloudflare, you have to configure nginx to enable that)
+        If that fails, return X-Forwarded-For (request IP when not under Cloudflare)
+        if everything else fails, return remote IP
 
         :return: Client IP address
         """
-
-        # Check if they are connecting through a switcher
-        if (
-            "ppy.sh" in self.request.headers.get("Host", "")
-            or not settings.HTTP_USING_CLOUDFLARE
-        ):
-            return self.request.headers.get("X-Real-IP")
-
-        return self.request.headers.get("CF-Connecting-IP")
-
+        return self.request.headers.get("X-Real-IP")
 
 def runBackground(data, callback):
     """
@@ -76,12 +60,9 @@ def runBackground(data, callback):
     :return:
     """
     func, args, kwargs = data
-
-    def _wrap():
-        callback(func(*args, **kwargs))
-
-    glob.pool.submit(func)
-
+    def _callback(result):
+        IOLoop.instance().add_callback(lambda: callback(result))
+    glob.pool.apply_async(func, args, kwargs, _callback)
 
 def checkArguments(arguments, requiredArguments):
     """
@@ -96,7 +77,6 @@ def checkArguments(arguments, requiredArguments):
             return False
     return True
 
-
 def printArguments(t):
     """
     Print passed arguments, for debug purposes
@@ -105,5 +85,5 @@ def printArguments(t):
     """
     msg = "ARGS::"
     for i in t.request.arguments:
-        msg += f"{i}={t.get_argument(i)}\r\n"
+        msg += "{}={}\r\n".format(i, t.get_argument(i))
     log.debug(msg)
