@@ -20,5 +20,4 @@ COPY ./scripts /app/scripts
 COPY ./peppy /app/peppy
 
 RUN chmod +x -R /app/scripts
-
 ENTRYPOINT [ "/app/scripts/bootstrap.sh" ]
