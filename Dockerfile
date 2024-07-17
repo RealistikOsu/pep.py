@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.9
 
 ENV PYTHONUNBUFFERED=1
 
@@ -18,5 +18,7 @@ COPY ./scripts /app/scripts
 
 # Application.
 COPY ./peppy /app/peppy
+
+RUN chmod +x -R /app/scripts
 
 ENTRYPOINT [ "/app/scripts/bootstrap.sh" ]
