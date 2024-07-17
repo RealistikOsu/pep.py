@@ -77,10 +77,7 @@ def runBackground(data, callback):
     """
     func, args, kwargs = data
 
-    def _callback(result):
-        IOLoop.instance().add_callback(lambda: callback(result))
-
-    glob.pool.apply_async(func, args, kwargs, _callback)
+    glob.pool.submit(func, *args, **kwargs)
 
 
 def checkArguments(arguments, requiredArguments):
