@@ -11,7 +11,7 @@ ENV DATA_BIBLE_PATH=/app/resources/bible.txt
 
 # Requirements
 COPY ./requirements/main.txt /app/requirements.txt
-RUN python3.12 -m pip install -r /app/requirements.txt
+RUN python3.9 -m pip install -r /app/requirements.txt
 
 # Scripts
 COPY ./scripts /app/scripts
