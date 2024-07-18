@@ -426,7 +426,7 @@ def handle(tornadoRequest):
         # Log for country tagging feature
         if countryLetters != "XX":
             glob.db.execute(
-                "INSERS INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
+                "INSERT INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
                 "VALUES (%s, %s, %s, %s)",
                 (userID, countryLetters, is_vpn, requestIP),
             )
