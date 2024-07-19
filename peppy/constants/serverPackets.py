@@ -8,7 +8,6 @@ from constants import dataTypes
 from constants import packetIDs
 from constants import userRanks
 from constants.rosuprivs import BAT
-from constants.rosuprivs import DEV_SUPPORTER
 from constants.rosuprivs import DEVELOPER
 from constants.rosuprivs import MODERATOR
 from constants.rosuprivs import OWNER
@@ -136,7 +135,7 @@ def user_presence(userID, force=False):
         userRank |= userRanks.ADMIN
     elif userToken.privileges == OWNER:
         userRank |= userRanks.PEPPY
-    elif userToken.privileges in (DEVELOPER, DEV_SUPPORTER):
+    elif userToken.privileges == DEVELOPER:
         userRank |= userRanks.ADMIN
     elif userToken.privileges == MODERATOR:
         userRank |= userRanks.MOD
