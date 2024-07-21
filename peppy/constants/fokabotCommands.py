@@ -1159,6 +1159,95 @@ def report(fro, chan, message):
                     token.enqueue(serverPackets.notification(msg))
     return False
 
+@registerCommand(
+        "!mp pp",
+)
+def mpPPCompetition(fro, chan, message):
+    """Automatically calculates every member's PP for scoring during the match."""
+
+    token = glob.tokens.getTokenFromUsername(fro)
+    if token is None:
+        return False
+
+    _match = glob.matches.matches[getMatchIDFromChannel(chan)]  # type: ignore
+
+    if _match.hostUserID != token.userID:
+        return "Only the host can enable or disable PP competition."
+
+    _match.pp_competition = not _match.pp_competition
+    return f"PP competition has been {'enabled' if _match.pp_competition else 'disabled'}!"
+
+
+@registerCommand(
+        "!mp start",
+)
+def mpStart(fro, chan, message):
+    """Starts the match after an optional countdown."""
+    def _start():
+        matchID = getMatchIDFromChannel(chan)
+        success = glob.matches.matches[matchID].start()
+        if not success:
+            chat.sendMessage(
+                glob.BOT_NAME,
+                chan,
+                "Couldn't start match. Make sure there are enough players and "
+                "teams are valid. The match has been unlocked.",
+            )
+        else:
+            chat.sendMessage(glob.BOT_NAME, chan, "Have fun!")
+
+    def _decreaseTimer(t):
+        if t <= 0:
+            _start()
+        else:
+            if t % 10 == 0 or t <= 5:
+                chat.sendMessage(
+                    glob.BOT_NAME,
+                    chan,
+                    f"Match starts in {t} seconds.",
+                )
+            threading.Timer(1.00, _decreaseTimer, [t - 1]).start()
+
+    if len(message) < 2 or not message[1].isdigit():
+        startTime = 0
+    else:
+        startTime = int(message[1])
+
+    force = False if len(message) < 3 else message[2].lower() == "force"
+    _match = glob.matches.matches[getMatchIDFromChannel(chan)]
+
+    token = glob.tokens.getTokenFromUsername(fro)
+    if token is None:
+        return False
+    
+    if _match.hostUserID != token.userID:
+        return "Only the host can start the match."
+
+    # Force everyone to ready
+    someoneNotReady = False
+    for i, slot in enumerate(_match.slots):
+        if slot.status != slotStatuses.READY and slot.user is not None:
+            someoneNotReady = True
+            if force:
+                _match.toggleSlotReady(i)
+
+    if someoneNotReady and not force:
+        return (
+            "Some users aren't ready yet. Use '!mp start force' if you want to start the match, "
+            "even with non-ready players."
+        )
+
+    if startTime == 0:
+        _start()
+        return "Starting match"
+    else:
+        _match.isStarting = True
+        threading.Timer(1.00, _decreaseTimer, [startTime - 1]).start()
+        return (
+            f"Match starts in {startTime} seconds. The match has been locked. "
+            "Please don't leave the match during the countdown "
+            "or you might receive a penalty."
+        )
 
 @registerCommand(
     trigger="!mp",
@@ -1277,66 +1366,6 @@ def multiplayer(fro, chan, message):
         matchID = getMatchIDFromChannel(chan)
         glob.matches.matches[matchID].removeHost()
         return "Host has been removed from this match"
-
-    def mpStart():
-        def _start():
-            matchID = getMatchIDFromChannel(chan)
-            success = glob.matches.matches[matchID].start()
-            if not success:
-                chat.sendMessage(
-                    glob.BOT_NAME,
-                    chan,
-                    "Couldn't start match. Make sure there are enough players and "
-                    "teams are valid. The match has been unlocked.",
-                )
-            else:
-                chat.sendMessage(glob.BOT_NAME, chan, "Have fun!")
-
-        def _decreaseTimer(t):
-            if t <= 0:
-                _start()
-            else:
-                if t % 10 == 0 or t <= 5:
-                    chat.sendMessage(
-                        glob.BOT_NAME,
-                        chan,
-                        f"Match starts in {t} seconds.",
-                    )
-                threading.Timer(1.00, _decreaseTimer, [t - 1]).start()
-
-        if len(message) < 2 or not message[1].isdigit():
-            startTime = 0
-        else:
-            startTime = int(message[1])
-
-        force = False if len(message) < 3 else message[2].lower() == "force"
-        _match = glob.matches.matches[getMatchIDFromChannel(chan)]
-
-        # Force everyone to ready
-        someoneNotReady = False
-        for i, slot in enumerate(_match.slots):
-            if slot.status != slotStatuses.READY and slot.user is not None:
-                someoneNotReady = True
-                if force:
-                    _match.toggleSlotReady(i)
-
-        if someoneNotReady and not force:
-            return (
-                "Some users aren't ready yet. Use '!mp start force' if you want to start the match, "
-                "even with non-ready players."
-            )
-
-        if startTime == 0:
-            _start()
-            return "Starting match"
-        else:
-            _match.isStarting = True
-            threading.Timer(1.00, _decreaseTimer, [startTime - 1]).start()
-            return (
-                f"Match starts in {startTime} seconds. The match has been locked. "
-                "Please don't leave the match during the countdown "
-                "or you might receive a penalty."
-            )
 
     def mpInvite():
         if len(message) < 2:
@@ -1584,14 +1613,6 @@ def multiplayer(fro, chan, message):
         _match.sendUpdates()
         return f"Match scoring type set to scorev{message[1]}"
 
-    def mpPPCompetition():
-        """Automatically calculates every member's PP for scoring during the match."""
-
-        _match = glob.matches.matches[getMatchIDFromChannel(chan)]  # type: ignore
-
-        _match.pp_competition = not _match.pp_competition
-        return f"PP competition has been {'enabled' if _match.pp_competition else 'disabled'}!"
-
     def mpHelp():
         return "Supported subcommands: !mp <{}>".format(
             "|".join(k for k in subcommands.keys()),
@@ -1608,7 +1629,6 @@ def multiplayer(fro, chan, message):
             "move": mpMove,
             "host": mpHost,
             "clearhost": mpClearHost,
-            "start": mpStart,
             "invite": mpInvite,
             "map": mpMap,
             "set": mpSet,
@@ -1621,7 +1641,6 @@ def multiplayer(fro, chan, message):
             "settings": mpSettings,
             "scorev": mpScoreV,
             "help": mpHelp,
-            "pp": mpPPCompetition,
         }
         requestedSubcommand = message[0].lower().strip()
         if requestedSubcommand not in subcommands:
