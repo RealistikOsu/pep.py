@@ -58,6 +58,7 @@ def handle(userToken, packetData):
             )
 
             match.updateScore(slotID, int(performance.pp))
+            packetData["totalScore"] = int(performance.pp)
         else:
             match.updateScore(slotID, data["totalScore"])
 
