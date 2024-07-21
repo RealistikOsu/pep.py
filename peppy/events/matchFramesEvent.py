@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from common.generalUtils import calc_acc
 from constants import clientPackets
 from constants import serverPackets
-from common.generalUtils import calc_acc
 from objects import glob
 
 
@@ -32,7 +32,12 @@ def handle(userToken, packetData):
         # Update the score
         if match.pp_competition:
             slot_mods = match.slots[slotID].mods | match.mods
-            passed_objects = data["count300"] + data["count100"] + data["count50"] + data["countMiss"]
+            passed_objects = (
+                data["count300"]
+                + data["count100"]
+                + data["count50"]
+                + data["countMiss"]
+            )
             accuracy = calc_acc(
                 match.gameMode,
                 data["count300"],
@@ -55,7 +60,7 @@ def handle(userToken, packetData):
             match.updateScore(slotID, int(performance.pp))
         else:
             match.updateScore(slotID, data["totalScore"])
-        
+
         match.updateHP(slotID, data["currentHp"])
 
         # Enqueue frames to who's playing
