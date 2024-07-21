@@ -47,7 +47,7 @@ def handle(userToken, packetData):
                 data["countKatu"],
                 data["countGeki"],
             )
-            performance = glob.performance_service.calculate_performance(
+            performance = glob.performance_service.calculate_performance_single(
                 beatmap_id=match.beatmapID,
                 mode=match.gameMode,
                 mods=slot_mods,
