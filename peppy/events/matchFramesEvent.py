@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from constants import clientPackets
 from constants import serverPackets
+from common.generalUtils import calc_acc
 from objects import glob
 
 
@@ -26,9 +27,35 @@ def handle(userToken, packetData):
     with glob.matches.matches[matchID] as match:
         # Change slot id in packetData
         slotID = match.getUserSlotID(userID)
+        assert slotID is not None
 
         # Update the score
-        match.updateScore(slotID, data["totalScore"])
+        if match.pp_competition:
+            slot_mods = match.slots[slotID].mods | match.mods
+            passed_objects = data["count300"] + data["count100"] + data["count50"] + data["countMiss"]
+            accuracy = calc_acc(
+                match.gameMode,
+                data["count300"],
+                data["count100"],
+                data["count50"],
+                data["countMiss"],
+                data["countKatu"],
+                data["countGeki"],
+            )
+            performance = glob.performance_service.calculate_performance(
+                beatmap_id=match.beatmapID,
+                mode=match.gameMode,
+                mods=slot_mods,
+                max_combo=data["maxCombo"],
+                accuracy=accuracy,
+                miss_count=data["countMiss"],
+                passed_objects=passed_objects,
+            )
+
+            match.updateScore(slotID, int(performance.pp))
+        else:
+            match.updateScore(slotID, data["totalScore"])
+        
         match.updateHP(slotID, data["currentHp"])
 
         # Enqueue frames to who's playing

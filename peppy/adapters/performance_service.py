@@ -16,8 +16,14 @@ class PerformanceResult:
 
 
 class PerformanceServiceApi:
-    def __init__(self, base_url: str) -> None:
+    def __init__(
+            self,
+            base_url: str,
+            *,
+            timeout: int = 1,
+    ) -> None:
         self._base_url = base_url
+        self._timeout = timeout
 
     
     def __make_performance_request(
@@ -40,7 +46,8 @@ class PerformanceServiceApi:
                 "accuracy": accuracy,
                 "miss_count": miss_count,
                 "passed_objects": passed_objects,
-            }
+            },
+            timeout=self._timeout,
         )
         respone.raise_for_status()
         return respone.json()
