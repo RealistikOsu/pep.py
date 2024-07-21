@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import requests
-
 from dataclasses import dataclass
 from typing import Any
 from typing import Optional
+
+import requests
+
 
 @dataclass
 class PerformanceResult:
@@ -17,24 +18,23 @@ class PerformanceResult:
 
 class PerformanceServiceApi:
     def __init__(
-            self,
-            base_url: str,
-            *,
-            timeout: int = 1,
+        self,
+        base_url: str,
+        *,
+        timeout: int = 1,
     ) -> None:
         self._base_url = base_url
         self._timeout = timeout
 
-    
     def __make_performance_request(
-            self,
-            beatmap_id: int,
-            mode: int,
-            mods: int,
-            max_combo: int,
-            accuracy: float,
-            miss_count: int,
-            passed_objects: Optional[int] = None,
+        self,
+        beatmap_id: int,
+        mode: int,
+        mods: int,
+        max_combo: int,
+        accuracy: float,
+        miss_count: int,
+        passed_objects: Optional[int] = None,
     ) -> dict[str, Any]:
         respone = requests.post(
             self._base_url + "/api/v1/calulcate",
@@ -51,17 +51,16 @@ class PerformanceServiceApi:
         )
         respone.raise_for_status()
         return respone.json()
-    
 
     def calculate_performance(
-            self,
-            beatmap_id: int,
-            mode: int,
-            mods: int,
-            max_combo: int,
-            accuracy: float,
-            miss_count: int,
-            passed_objects: Optional[int] = None,
+        self,
+        beatmap_id: int,
+        mode: int,
+        mods: int,
+        max_combo: int,
+        accuracy: float,
+        miss_count: int,
+        passed_objects: Optional[int] = None,
     ) -> PerformanceResult:
         response = self.__make_performance_request(
             beatmap_id,

@@ -226,5 +226,5 @@ def calc_acc(mode, n300, n100, n50, miss, katu, geki):
                 * ((n50 * 50) + (n100 * 100) + (katu * 200.0) + ((n300 + geki) * 300.0))
                 / (hits * 300.0)
             )
-        
+
     raise ValueError(f"Invalid mode: {mode}")
