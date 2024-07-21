@@ -922,10 +922,6 @@ class Match:
         # Remove isStarting timer flag thingie
         self.isStarting = False
 
-        # Make sure we have enough players
-        if self.countUsers() < 2 or not self.checkTeams():
-            return False
-
         # Create playing channel
         glob.streams.add(self.playingStreamName)
 
