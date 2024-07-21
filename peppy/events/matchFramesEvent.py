@@ -58,7 +58,7 @@ def handle(userToken, packetData):
             )
 
             match.updateScore(slotID, int(performance.pp))
-            packetData["totalScore"] = int(performance.pp)
+            data["totalScore"] = int(performance.pp)
         else:
             match.updateScore(slotID, data["totalScore"])
 
@@ -67,5 +67,21 @@ def handle(userToken, packetData):
         # Enqueue frames to who's playing
         glob.streams.broadcast(
             match.playingStreamName,
-            serverPackets.match_frames(slotID, packetData),
+            serverPackets.match_frames(
+                time=data["time"],
+                slot_id=slotID,
+                count_300=data["count300"],
+                count_100=data["count100"],
+                count_50=data["count50"],
+                count_geki=data["countGeki"],
+                count_katu=data["countKatu"],
+                count_miss=data["countMiss"],
+                total_score=data["totalScore"],
+                max_combo=data["maxCombo"],
+                current_combo=data["currentCombo"],
+                perfect=data["perfect"],
+                current_hp=data["currentHp"],
+                tag_byte=data["tagByte"],
+                using_score_v2=data["usingScoreV2"],
+            ),
         )

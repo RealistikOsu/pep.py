@@ -378,13 +378,41 @@ def match_all_skipped():
     return b"=\x00\x00\x00\x00\x00\x00"
 
 
-def match_frames(slotID, data):
+def match_frames(
+        time: int,
+        slot_id: int,
+        count_300: int,
+        count_100: int,
+        count_50: int,
+        count_geki: int,
+        count_katu: int,
+        count_miss: int,
+        total_score: int,
+        max_combo: int,
+        current_combo: int,
+        perfect: int,
+        current_hp: int,
+        tag_byte: int,
+        using_score_v2: int,
+    ) -> bytes:
     return packetHelper.buildPacket(
         packetIDs.server_matchScoreUpdate,
         (
-            (data[7:11], dataTypes.BBYTES),
-            (slotID, dataTypes.BYTE),
-            (data[12:], dataTypes.BBYTES),
+            (time, dataTypes.SINT32),
+            (slot_id, dataTypes.BYTE),
+            (count_300, dataTypes.UINT16),
+            (count_100, dataTypes.UINT16),
+            (count_50, dataTypes.UINT16),
+            (count_geki, dataTypes.UINT16),
+            (count_katu, dataTypes.UINT16),
+            (count_miss, dataTypes.UINT16),
+            (total_score, dataTypes.SINT32),
+            (max_combo, dataTypes.UINT16),
+            (current_combo, dataTypes.UINT16),
+            (perfect, dataTypes.BYTE),
+            (current_hp, dataTypes.BYTE),
+            (tag_byte, dataTypes.BYTE),
+            (using_score_v2, dataTypes.BYTE),
         ),
     )
 
