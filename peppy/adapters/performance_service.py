@@ -37,18 +37,23 @@ class PerformanceServiceApi:
         self._base_url = base_url
         self._timeout = timeout
 
-    def __make_performance_request(self, calculation_requests: list[PerformanceRequest]) -> list[dict[str, Any]]:
+    def __make_performance_request(
+        self, calculation_requests: list[PerformanceRequest],
+    ) -> list[dict[str, Any]]:
         respone = requests.post(
             self._base_url + "/api/v1/calculate",
-            json=[{
-                "beatmap_id": req.beatmap_id,
-                "mode": req.mode,
-                "mods": req.mods,
-                "max_combo": req.max_combo,
-                "accuracy": req.accuracy,
-                "miss_count": req.miss_count,
-                "passed_objects": req.passed_objects,
-            } for req in calculation_requests],
+            json=[
+                {
+                    "beatmap_id": req.beatmap_id,
+                    "mode": req.mode,
+                    "mods": req.mods,
+                    "max_combo": req.max_combo,
+                    "accuracy": req.accuracy,
+                    "miss_count": req.miss_count,
+                    "passed_objects": req.passed_objects,
+                }
+                for req in calculation_requests
+            ],
             timeout=self._timeout,
         )
         respone.raise_for_status()
