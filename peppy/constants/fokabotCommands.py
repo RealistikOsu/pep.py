@@ -1583,6 +1583,14 @@ def multiplayer(fro, chan, message):
         )
         _match.sendUpdates()
         return f"Match scoring type set to scorev{message[1]}"
+    
+    def mpPPCompetition():
+        """Automatically calculates every member's PP for scoring during the match."""
+
+        _match = glob.matches.matches[getMatchIDFromChannel(chan)] # type: ignore
+
+        _match.pp_competition = not _match.pp_competition
+        return f"PP competition has been {'enabled' if _match.pp_competition else 'disabled'}!"
 
     def mpHelp():
         return "Supported subcommands: !mp <{}>".format(
@@ -1613,6 +1621,7 @@ def multiplayer(fro, chan, message):
             "settings": mpSettings,
             "scorev": mpScoreV,
             "help": mpHelp,
+            "pp": mpPPCompetition,
         }
         requestedSubcommand = message[0].lower().strip()
         if requestedSubcommand not in subcommands:
