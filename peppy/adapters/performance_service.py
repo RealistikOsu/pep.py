@@ -37,7 +37,7 @@ class PerformanceServiceApi:
             passed_objects: Optional[int] = None,
     ) -> dict[str, Any]:
         respone = requests.post(
-            self._base_url + "/api/v1/calulcate",
+            self._base_url + "/api/v1/calculate",
             data={
                 "beatmap_id": beatmap_id,
                 "mode": mode,
