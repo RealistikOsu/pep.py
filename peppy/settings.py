@@ -37,6 +37,8 @@ REDIS_PORT = int(os.environ["REDIS_PORT"])
 REDIS_PASSWORD = os.environ["REDIS_PASSWORD"]
 REDIS_DB = int(os.environ["REDIS_DB"])
 
+PERFORMANCE_SERVICE_URL = os.environ["PERFORMANCE_SERVICE_URL"]
+
 DISCORD_RANKED_WEBHOOK_URL = os.environ["DISCORD_RANKED_WEBHOOK_URL"]
 
 # TODO: Find a better acronym to call an "osu! private server" than "PS"

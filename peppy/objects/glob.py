@@ -1,4 +1,3 @@
-"""Global objects and variables"""
 from __future__ import annotations
 
 import time
@@ -7,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import settings
 from adapters import Ip2LocationApi
+from adapters import PerformanceServiceApi
 from collection.channels import ChannelList
 from collection.matches import MatchList
 from collection.streams import StreamList
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 # Consts.
 BOT_NAME = settings.PS_BOT_USERNAME
 
-__version__ = "3.1.0"
+__version__ = "4.0.0"
 
 application = None
 db: DatabasePool
@@ -45,4 +45,7 @@ user_statuses: StatusManager
 geolocation_api = Ip2LocationApi(
     settings.IP2LOCATION_API_KEY,
     silent_fail=True,
+)
+performance_service = PerformanceServiceApi(
+    settings.PERFORMANCE_SERVICE_URL,
 )
