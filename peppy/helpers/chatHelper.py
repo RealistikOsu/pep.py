@@ -361,7 +361,7 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
         if to.startswith("#") and not (
             message.startswith("\x01ACTION is playing") and to.startswith("#spect_")
         ):
-            log.chat(
+            log.info(
                 "{fro} @ {to}: {message}".format(
                     fro=token.username,
                     to=to,

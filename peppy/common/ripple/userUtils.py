@@ -1443,14 +1443,12 @@ def silence(userID, seconds, silenceReason, author=None):
     targetUsername = getUsername(userID)
     # TODO: exists check im drunk rn i need to sleep (stampa piede ubriaco confirmed)
     if seconds > 0:
-        log.rap(
-            author,
+        log.info(
             'has silenced {} for {} seconds for the following reason: "{}"'.format(
                 targetUsername,
                 seconds,
                 silenceReason,
-            ),
-            True,
+            )
         )
     else:
         log.rap(author, f"has removed {targetUsername}'s silence", True)

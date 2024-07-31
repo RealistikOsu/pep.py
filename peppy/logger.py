@@ -1,84 +1,65 @@
 from __future__ import annotations
 
+from typing import Any
+from typing import Optional
+
+import logging
+from pythonjsonlogger import jsonlogger
+import os
 import sys
 import time
-
-from colorama import Back
-from colorama import Fore
-
-CLEAR_FORE = Fore.RESET
-CLEAR_BACK = Back.RESET
-
-# Received permission directly from him to use it. Just figured it looks cool.
-# Made some optimisations to it.
-__name__ = "LoggerModule"
-__author__ = "Lenforiee"
+from enum import IntEnum
 
 DEBUG = "debug" in sys.argv
+__all__ = (
+    "info",
+    "error",
+    "warning",
+    "debug",
+)
+
+logging.basicConfig(
+    level="DEBUG",
+)
+
+logger = logging.getLogger()
+logHandler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter()
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
 
 
-def formatted_date():
-    """Returns the current fromatted date in the format
-    DD/MM/YYYY HH:MM:SS"""
-
-    return time.strftime("%d-%m-%Y %H:%M:%S", time.localtime())
+def info(text: str, *, extra: Optional[dict[str, Any]] = None):
+    logger.info(text, extra=extra)
 
 
-def log_message(content: str, l_type: str, bg_col: Fore):
-    """Creates the final string and writes it to console.
+def error(text: str, *, extra: Optional[dict[str, Any]] = None):
+    logger.error(text, extra=extra)
 
-    Args:
-        content (str): The main text to be logged to
-            console.
-        l_type (str): The type of the log that will be
-            displayed to the user.
-        bl_col (Fore): The background colour for the
-            `l_type`.
-    """
 
-    # Print to console. Use this as faster ig.
-    sys.stdout.write(
-        f"{Fore.WHITE}{bg_col}[{l_type}]{CLEAR_BACK} - "
-        f"[{formatted_date()}] {content}{CLEAR_FORE}\n",
-    )
+def warning(text: str, *, extra: Optional[dict[str, Any]] = None):
+    logger.warn(text, extra=extra)
+
+
+def debug(text: str, *, extra: Optional[dict[str, Any]] = None):
+    logger.debug(text, extra=extra)
 
 
 class Logger:
     def debug(self, message: str):
-        if DEBUG:
-            return log_message(message, "DEBUG", Back.YELLOW)
+        debug(message)
 
     def info(self, message: str):
-        return log_message(message, "INFO", Back.GREEN)
+        info(message)
 
     def error(self, message: str):
-        return log_message(message, "ERROR", Back.RED)
+        error(message)
 
     def warning(self, message: str):
-        return log_message(message, "WARNING", Back.BLUE)
-
-    # Ripple Stuff
-    def logMessage(
-        self,
-        message,
-        alertType="INFO",
-        messageColor=Back.BLACK,
-        discord=None,
-        alertDev=False,
-        of=None,
-        stdout=True,
-    ):
-        if stdout:
-            log_message(message, alertType, messageColor)
-
-    def chat(self, message: str):
-        self.debug(f"User sent public message: {message}")
-
-    def pm(self, message: str):
-        pass
+        warning(message)
 
     def rap(self, userID, message, discord=False, through=None):
-        log_message(f"{userID} {message}", "RAP", Back.GREEN)
+        info(f"RAP: {userID} {message}")
 
 
 log = Logger()
