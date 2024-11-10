@@ -379,22 +379,22 @@ def match_all_skipped():
 
 
 def match_frames(
-        time: int,
-        slot_id: int,
-        count_300: int,
-        count_100: int,
-        count_50: int,
-        count_geki: int,
-        count_katu: int,
-        count_miss: int,
-        total_score: int,
-        max_combo: int,
-        current_combo: int,
-        perfect: int,
-        current_hp: int,
-        tag_byte: int,
-        using_score_v2: int,
-    ) -> bytes:
+    time: int,
+    slot_id: int,
+    count_300: int,
+    count_100: int,
+    count_50: int,
+    count_geki: int,
+    count_katu: int,
+    count_miss: int,
+    total_score: int,
+    max_combo: int,
+    current_combo: int,
+    perfect: int,
+    current_hp: int,
+    tag_byte: int,
+    using_score_v2: int,
+) -> bytes:
     return packetHelper.buildPacket(
         packetIDs.server_matchScoreUpdate,
         (
