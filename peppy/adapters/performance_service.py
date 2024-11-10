@@ -38,7 +38,8 @@ class PerformanceServiceApi:
         self._timeout = timeout
 
     def __make_performance_request(
-        self, calculation_requests: list[PerformanceRequest],
+        self,
+        calculation_requests: list[PerformanceRequest],
     ) -> list[dict[str, Any]]:
         respone = requests.post(
             self._base_url + "/api/v1/calculate",

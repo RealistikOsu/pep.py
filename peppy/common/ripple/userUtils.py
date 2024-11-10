@@ -1448,7 +1448,7 @@ def silence(userID, seconds, silenceReason, author=None):
                 targetUsername,
                 seconds,
                 silenceReason,
-            )
+            ),
         )
     else:
         log.rap(author, f"has removed {targetUsername}'s silence", True)
