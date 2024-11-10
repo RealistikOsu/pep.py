@@ -181,7 +181,7 @@ def getPPMessage(userID, just_data=False):
         currentAcc = token.tillerino[2]
 
         # Send request to LETS api
-        url = f"http://localhost:5002/api/v1/pp?b={currentMap}&m={currentMods}"
+        url = f"{settings.USSR_URL}/api/v1/pp?b={currentMap}&m={currentMods}"
         if currentAcc != -1:
             url += f"&a{currentAcc}"
         resp = requests.get(url, timeout=10)
