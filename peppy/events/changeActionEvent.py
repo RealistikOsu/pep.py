@@ -16,7 +16,7 @@ def handle(userToken, packetData):
     username = userToken.username
 
     # Make sure we are not banned
-    # if userUtils.isBanned(userID):
+    # if users.is_banned(userID):
     #     userToken.enqueue(server.login_banned())
     #     return
 
@@ -38,7 +38,7 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
         """
 
     # Update cached stats if our pp changed if we've just submitted a score or we've changed gameMode
-    # if (userToken.actionID == actions.PLAYING or userToken.actionID == actions.MULTIPLAYING) or (userToken.pp != userUtils.getPP(userID, userToken.gameMode)) or (userToken.gameMode != packetData["gameMode"]):
+    # if (userToken.actionID == actions.PLAYING or userToken.actionID == actions.MULTIPLAYING) or (userToken.pp != users.get_pp(userID, userToken.gameMode)) or (userToken.gameMode != packetData["gameMode"]):
 
     # Update cached stats if we've changed gamemode
     if userToken.gameMode != packetData["gameMode"]:

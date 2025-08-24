@@ -1,4 +1,5 @@
 """Contains functions used to write specific server packets to byte streams"""
+
 from __future__ import annotations
 
 from . import builder
@@ -6,7 +7,7 @@ from . import ids
 from . import types
 from .. import settings
 from ..common.constants import privileges
-from ..common.ripple import userUtils
+from ..common.ripple import users
 from ..constants import userRanks
 from ..constants.rosuprivs import BAT
 from ..constants.rosuprivs import DEVELOPER
@@ -82,7 +83,7 @@ def bancho_priv(supporter, GMT, tournamentStaff):
 
 
 def friend_list(userID):
-    friends = userUtils.getFriendList(userID)
+    friends = users.get_friend_list(userID)
     return builder.BinaryWriter().write_int_list(friends).finish(ids.server_friendsList)
 
 
@@ -185,7 +186,7 @@ def message_notify(fro: str, to: str, message: str):
         .write_str(fro)
         .write_str(message)
         .write_str(to)
-        .write_i32(userUtils.getID(fro))
+        .write_i32(users.get_id(fro))
         .finish(ids.server_sendMessage)
     )
 

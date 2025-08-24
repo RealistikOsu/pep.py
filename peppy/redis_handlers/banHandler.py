@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from common.redis import generalPubSubHandler
-from common.ripple import userUtils
+from common.ripple import users
 from objects import glob
 
 

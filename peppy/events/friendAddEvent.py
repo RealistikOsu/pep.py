@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from common.ripple import userUtils
+from common.ripple import users
 from packets import client
 
 logger = logging.getLogger(__name__)
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def handle(userToken, packetData):
     # Friend add packet
     packetData = client.addRemoveFriend(packetData)
-    userUtils.addFriend(userToken.userID, packetData["friendID"])
+    users.add_friend(userToken.userID, packetData["friendID"])
 
     # Console output
     logger.info(

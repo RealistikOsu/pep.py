@@ -7,7 +7,7 @@ from typing import Optional
 
 import redis
 import settings
-from common.ripple import userUtils
+from common.ripple import users
 from constants.exceptions import periodicLoopException
 from events import logoutEvent
 from helpers.user_helper import username_safe
@@ -67,7 +67,7 @@ class TokenList:
         """
         if token in self.tokens:
             if self.tokens[token].ip:
-                userUtils.deleteBanchoSessions(
+                users.delete_bancho_sessions(
                     self.tokens[token].userID,
                     self.tokens[token].ip,
                 )

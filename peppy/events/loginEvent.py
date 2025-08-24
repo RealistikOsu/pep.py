@@ -9,8 +9,8 @@ from datetime import datetime
 
 import settings
 from common.constants import privileges
-from common.ripple import userUtils
-from common.ripple.userUtils import restrict_with_log
+from common.ripple import users
+from common.ripple.users import restrict_with_log
 from constants import exceptions
 from helpers import chatHelper as chat
 from helpers import geo_helper

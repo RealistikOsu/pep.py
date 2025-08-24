@@ -11,7 +11,7 @@ import settings
 from common.constants import actions
 from common.constants import gameModes
 from common.constants import privileges
-from common.ripple import userUtils
+from common.ripple import users
 from constants import exceptions
 from constants.rosuprivs import ADMIN_PRIVS
 from events import logoutEvent
@@ -129,7 +129,7 @@ class UserToken:
 
         # If we have a valid ip, save bancho session in DB so we can cache LETS logins
         if ip != "":
-            userUtils.saveBanchoSession(self.userID, self.ip)
+            users.save_bancho_session(self.userID, self.ip)
 
         # Join main stream
         self.joinStream("main")
@@ -497,10 +497,10 @@ class UserToken:
 
         if seconds is None:
             # Get silence expire from db if needed
-            seconds = max(0, userUtils.getSilenceEnd(self.userID) - int(time.time()))
+            seconds = max(0, users.get_silence_end(self.userID) - int(time.time()))
         else:
             # Silence in db and token
-            userUtils.silence(self.userID, seconds, reason, author)
+            users.silence(self.userID, seconds, reason, author)
 
         # Silence token
         self.silenceEndTime = int(time.time()) + seconds
@@ -543,7 +543,7 @@ class UserToken:
         """
 
         if self.relaxing:
-            stats_relax = userUtils.getUserStatsRx(self.userID, self.gameMode)
+            stats_relax = users.get_user_stats_rx(self.userID, self.gameMode)
 
             self.gameRank = stats_relax["gameRank"]
             self.pp = stats_relax["pp"]
@@ -553,7 +553,7 @@ class UserToken:
             self.totalScore = stats_relax["totalScore"]
 
         elif self.autopiloting:
-            stats_ap = userUtils.getUserStatsAP(self.userID, self.gameMode)
+            stats_ap = users.get_user_stats_ap(self.userID, self.gameMode)
 
             self.gameRank = stats_ap["gameRank"]
             self.pp = stats_ap["pp"]
@@ -562,7 +562,7 @@ class UserToken:
             self.playcount = stats_ap["playcount"]
             self.totalScore = stats_ap["totalScore"]
         else:
-            stats = userUtils.getUserStats(self.userID, self.gameMode)
+            stats = users.get_user_stats(self.userID, self.gameMode)
 
             self.gameRank = stats["gameRank"]
             self.pp = stats["pp"]
@@ -605,7 +605,7 @@ class UserToken:
 
         # Ok so the only place where this is used is right after a priv refresh
         # from db so...
-        if userUtils.isBanned(self.userID):
+        if users.is_banned(self.userID):
             self.enqueue(server.login_banned())
             logoutEvent.handle(self, deleteToken=False)
 

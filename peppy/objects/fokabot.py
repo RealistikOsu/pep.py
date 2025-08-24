@@ -12,7 +12,7 @@ from importlib import reload
 
 import settings
 from common.constants import actions
-from common.ripple import userUtils
+from common.ripple import users
 from constants import fokabotCommands
 from packets import server
 from objects import glob
@@ -24,7 +24,7 @@ def connect():
 
     :return:
     """
-    glob.BOT_NAME = userUtils.getUsername(settings.PS_BOT_USER_ID)
+    glob.BOT_NAME = users.get_username(settings.PS_BOT_USER_ID)
     token = glob.tokens.addToken(settings.PS_BOT_USER_ID)
     token.actionID = actions.WATCHING
     token.actionText = f"over {settings.PS_NAME}!"

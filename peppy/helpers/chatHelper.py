@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from typing import Union
 
 import settings
-from common.ripple import userUtils
+from common.ripple import users
 from constants import exceptions
 from events import logoutEvent
 from objects import fokabot
@@ -325,7 +325,7 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
             # Make sure recipient user is connected
             recipientToken = glob.tokens.getTokenFromUsername(to)
             if recipientToken is None:
-                user_id = userUtils.getID(to)
+                user_id = users.get_id(to)
                 if user_id:
                     log_message_db(token, user_id, message)
                 raise exceptions.userNotFoundException()

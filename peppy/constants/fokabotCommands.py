@@ -21,8 +21,8 @@ from common import generalUtils
 from common.constants import gameModes
 from common.constants import mods
 from common.constants import privileges
-from common.ripple import userUtils
-from common.ripple.userUtils import restrict_with_log
+from common.ripple import users
+from common.ripple.users import restrict_with_log
 from constants import exceptions
 from constants import matchModModes
 from constants import matchScoringTypes
@@ -497,8 +497,8 @@ def silence(fro, chan, message):
         return "The amount must be a number."
 
     # Get target user ID
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
 
     # Make sure the user exists
     if not targetUserID:
@@ -527,7 +527,7 @@ def silence(fro, chan, message):
         targetToken.silence(silenceTime, reason, userID)
     else:
         # User offline, silence user only in db
-        userUtils.silence(targetUserID, silenceTime, reason, userID)
+        users.silence(targetUserID, silenceTime, reason, userID)
 
     # Log message
     msg = f"{target} has been silenced for: {reason}"
@@ -544,8 +544,8 @@ def removeSilence(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -556,7 +556,7 @@ def removeSilence(fro, chan, message):
         targetToken.silence(0, "", userID)
     else:
         # user offline, remove islene ofnlt from db
-        userUtils.silence(targetUserID, 0, "", userID)
+        users.silence(targetUserID, 0, "", userID)
 
     return f"{target}'s silence reset"
 
@@ -568,12 +568,12 @@ def ban(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
     # Set allowed to 0
-    userUtils.ban(targetUserID)
+    users.ban(targetUserID)
 
     # Send ban packet to the user if he's online
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
@@ -591,13 +591,13 @@ def unban(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
     # Set allowed to 1
-    userUtils.unban(targetUserID)
+    users.unban(targetUserID)
 
     logger.info(f"RAP: userID has unbanned {target}", extra={"userID": userID})
     return f"Welcome back {target}!"
@@ -621,8 +621,8 @@ def restrict(fro, chan, message):
     summary, detail = matched[0]
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"Could not find the user '{target}' on the server."
 
@@ -652,8 +652,8 @@ def freeze(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -696,8 +696,8 @@ def unfreeze(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -737,13 +737,13 @@ def unrestrict(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
     # Set allowed to 1
-    userUtils.unrestrict(targetUserID)
+    users.unrestrict(targetUserID)
 
     logger.info(
         f"RAP: userID has removed restricted mode from {target}",
@@ -1108,7 +1108,7 @@ def report(fro, chan, message):
             raise exceptions.invalidUserException()
 
         # Make sure the user exists
-        targetID = userUtils.getID(target)
+        targetID = users.get_id(target)
         if targetID == 0:
             raise exceptions.userNotFoundException()
 
@@ -1126,7 +1126,7 @@ def report(fro, chan, message):
         glob.db.execute(
             "INSERT INTO reports (id, from_uid, to_uid, reason, chatlog, time) VALUES (NULL, %s, %s, %s, %s, %s)",
             [
-                userUtils.getID(fro),
+                users.get_id(fro),
                 targetID,
                 "{reason} - ingame {info}".format(
                     reason=reason,
@@ -1342,7 +1342,7 @@ def multiplayer(fro, chan, message):
             )
         username = message[1]
         newSlotID = int(message[2])
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1361,7 +1361,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1385,7 +1385,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         token = glob.tokens.getTokenFromUserID(userID)
@@ -1487,7 +1487,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1561,7 +1561,7 @@ def multiplayer(fro, chan, message):
             raise exceptions.invalidArgumentsException(
                 "Team colour must be red or blue",
             )
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1596,16 +1596,20 @@ def multiplayer(fro, chan, message):
                 readableStatus = readableStatuses[slot.status]
             empty = False
             msg += "* [{team}] <{status}> ~ {username}{mods}{nl}".format(
-                team="red"
-                if slot.team == matchTeams.RED
-                else "blue"
-                if slot.team == matchTeams.BLUE
-                else "!! no team !!",
+                team=(
+                    "red"
+                    if slot.team == matchTeams.RED
+                    else "blue"
+                    if slot.team == matchTeams.BLUE
+                    else "!! no team !!"
+                ),
                 status=readableStatus,
                 username=glob.tokens.tokens[slot.user].username,
-                mods=f" (+ {generalUtils.readableMods(slot.mods)})"
-                if slot.mods > 0
-                else "",
+                mods=(
+                    f" (+ {generalUtils.readableMods(slot.mods)})"
+                    if slot.mods > 0
+                    else ""
+                ),
                 nl=" | " if single else "\n",
             )
         if empty:
@@ -1678,8 +1682,8 @@ def switchServer(fro, chan, message):
     newServer = message[0].strip()
     if not newServer:
         return "Invalid server IP"
-    targetUserID = userUtils.getIDSafe(fro)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(fro)
+    userID = users.get_id(fro)
 
     # Make sure the user exists
     if not targetUserID:
