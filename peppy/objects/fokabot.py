@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 """FokaBot related functions"""
 from __future__ import annotations
 
@@ -10,7 +13,6 @@ from common.constants import actions
 from common.ripple import userUtils
 from constants import fokabotCommands
 from constants import serverPackets
-from logger import log
 from objects import glob
 
 
@@ -98,7 +100,7 @@ def fokabotResponse(fro, chan, message):
         except Exception:
             # If exception happens, handle it well.
             tb = traceback.format_exc()
-            log.error(
+            logger.error(
                 f"There was an issue while running '{cmd.trigger}' command. \nTraceback: {tb}",
             )
             resp = [

@@ -36,9 +36,11 @@ from helpers import systemHelper
 from helpers import user_helper
 from helpers.status_helper import UserStatus
 from helpers.user_helper import username_safe
-from logger import log
 from objects import fokabot
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 REGEX = "^{}( (.+)?)?$"
 commands = {}
@@ -578,7 +580,7 @@ def ban(fro, chan, message):
     if targetToken is not None:
         targetToken.enqueue(serverPackets.login_banned())
 
-    log.rap(userID, f"has banned {target}", True)
+    logger.info("RAP: userID, f"has banned {target}", True")
     return f"RIP {target}. You will not be missed."
 
 
@@ -597,7 +599,7 @@ def unban(fro, chan, message):
     # Set allowed to 1
     userUtils.unban(targetUserID)
 
-    log.rap(userID, f"has unbanned {target}", True)
+    logger.info("RAP: userID, f"has unbanned {target}", True")
     return f"Welcome back {target}!"
 
 
@@ -680,7 +682,7 @@ def freeze(fro, chan, message):
             ),
         )
 
-    log.rap(userID, f"has frozen {target}", True)
+    logger.info("RAP: userID, f"has frozen {target}", True")
     return "User has been frozen!"
 
 
@@ -721,7 +723,7 @@ def unfreeze(fro, chan, message):
             ),
         )
 
-    log.rap(userID, f"has unfrozen {target}", True)
+    logger.info("RAP: userID, f"has unfrozen {target}", True")
     return "User has been unfrozen!"
 
 
@@ -743,7 +745,7 @@ def unrestrict(fro, chan, message):
     # Set allowed to 1
     userUtils.unrestrict(targetUserID)
 
-    log.rap(userID, f"has removed restricted mode from {target}", True)
+    logger.info("RAP: userID, f"has removed restricted mode from {target}", True")
     return f"Welcome back {target}!"
 
 
@@ -1140,7 +1142,7 @@ def report(fro, chan, message):
 
         # Log report in #admin and on discord
         chat.sendMessage(glob.BOT_NAME, "#admin", adminMsg)
-        log.warning(adminMsg, discord="cm")
+        logger.warning(adminMsg, discord="cm")
     except exceptions.invalidUserException:
         msg = f"Hello, {glob.BOT_NAME} here! You can't report me. I won't forget what you've tried to do. Watch out."
     except exceptions.invalidArgumentsException:

@@ -8,8 +8,10 @@ from constants import matchModModes
 from constants import matchTeams
 from constants import matchTeamTypes
 from constants import slotStatuses
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -96,4 +98,4 @@ def handle(userToken, packetData):
         match.sendUpdates()
 
         # Console output
-        log.info(f"MPROOM{match.matchID}: Updated room settings")
+        logger.info("MPROOM{match.matchID}: Updated room settings")

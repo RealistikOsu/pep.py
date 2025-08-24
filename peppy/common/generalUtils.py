@@ -8,7 +8,9 @@ from time import localtime
 from time import strftime
 
 from common.constants import mods
-from logger import log
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def randomString(length=8):

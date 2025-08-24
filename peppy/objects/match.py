@@ -16,8 +16,10 @@ from constants import matchTeamTypes
 from constants import serverPackets
 from constants import slotStatuses
 from helpers import chatHelper as chat
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from objects.osuToken import UserToken
@@ -103,7 +105,7 @@ class Match:
 
         # Create #multiplayer channel
         glob.channels.addHiddenChannel(f"#multi_{self.matchID}")
-        log.info(
+        logger.info(
             "MPROOM{}: {} match created!".format(
                 self.matchID,
                 "Tourney" if self.isTourney else "Normal",
@@ -194,7 +196,7 @@ class Match:
         self.hostUserID = newHost
         token.enqueue(serverPackets.match_new_host_notify())
         self.sendUpdates()
-        log.info(f"MPROOM{self.matchID}: {token.username} is now the host")
+        logger.info("MPROOM{self.matchID}: {token.username} is now the host")
         return True
 
     def removeHost(self) -> None:
@@ -204,7 +206,7 @@ class Match:
         """
         self.hostUserID = -1
         self.sendUpdates()
-        log.info(f"MPROOM{self.matchID}: Removed host")
+        logger.info("MPROOM{self.matchID}: Removed host")
 
     # TODO: This is aids. rewrite.
     def setSlot(
@@ -265,7 +267,7 @@ class Match:
         # Set new slot data and send update
         self.setSlot(slotID, mods=mods)
         self.sendUpdates()
-        log.info(
+        logger.info(
             f"MPROOM{self.matchID}: Slot{slotID} mods changed to {mods}",
         )
 
@@ -287,7 +289,7 @@ class Match:
             newStatus = slotStatuses.READY
         self.setSlot(slotID, newStatus)
         self.sendUpdates()
-        log.info(
+        logger.info(
             "MPROOM{}: Slot{} changed ready status to {}".format(
                 self.matchID,
                 slotID,
@@ -323,7 +325,7 @@ class Match:
 
         # Send updates to everyone else
         self.sendUpdates()
-        log.info(
+        logger.info(
             "MPROOM{}: Slot{} {}".format(
                 self.matchID,
                 slotID,
@@ -344,7 +346,7 @@ class Match:
 
         # Set loaded to True
         self.slots[slotID].loaded = True
-        log.info(f"MPROOM{self.matchID}: User {userID} loaded")
+        logger.info("MPROOM{self.matchID}: User {userID} loaded")
 
         # Check all loaded
         total = 0
@@ -368,7 +370,7 @@ class Match:
             self.playingStreamName,
             serverPackets.match_all_players_loaded(),
         )
-        log.info(f"MPROOM{self.matchID}: All players loaded! Match starting...")
+        logger.info("MPROOM{self.matchID}: All players loaded! Match starting...")
 
     def playerSkip(self, userID: int) -> None:
         """
@@ -383,7 +385,7 @@ class Match:
 
         # Set skip to True
         self.slots[slotID].skip = True
-        log.info(f"MPROOM{self.matchID}: User {userID} skipped")
+        logger.info("MPROOM{self.matchID}: User {userID} skipped")
 
         # Send skip packet to every playing user
         # glob.streams.broadcast(self.playingStreamName, serverPackets.match_player_skipped(glob.tokens.tokens[self.slots[slotID].user].userID))
@@ -414,7 +416,7 @@ class Match:
             self.playingStreamName,
             serverPackets.match_all_skipped(),
         )
-        log.info(f"MPROOM{self.matchID}: All players have skipped!")
+        logger.info("MPROOM{self.matchID}: All players have skipped!")
 
     def updateScore(self, slotID: int, score: int) -> None:
         """
@@ -448,7 +450,7 @@ class Match:
         self.setSlot(slotID, complete=True)
 
         # Console output
-        log.info(
+        logger.info(
             f"MPROOM{self.matchID}: User {userID} has completed his play",
         )
 
@@ -514,7 +516,7 @@ class Match:
         glob.streams.remove(self.playingStreamName)
 
         # Console output
-        log.info(f"MPROOM{self.matchID}: Match completed")
+        logger.info("MPROOM{self.matchID}: Match completed")
 
         # Set vinse id if needed
         chanName = f"#multi_{self.matchID}"
@@ -595,7 +597,7 @@ class Match:
                 user.joinChannel(glob.channels.channels[f"#multi_{self.matchID}"])
 
                 # Console output
-                log.info(
+                logger.info(
                     f"MPROOM{self.matchID}: {user.username} joined the room",
                 )
                 return True
@@ -622,7 +624,7 @@ class Match:
         if self.countUsers() == 0 and disposeMatch and not self.isTourney:
             # Dispose match
             glob.matches.match_dispose(self.matchID)
-            log.info(
+            logger.info(
                 f"MPROOM{self.matchID}: Room disposed because all users left",
             )
             return
@@ -642,7 +644,7 @@ class Match:
         self.sendUpdates()
 
         # Console output
-        log.info(f"MPROOM{self.matchID}: {user.username} left the room")
+        logger.info("MPROOM{self.matchID}: {user.username} left the room")
 
     def userChangeSlot(self, userID: int, newSlotID: int) -> bool:
         """
@@ -687,7 +689,7 @@ class Match:
         self.sendUpdates()
 
         # Console output
-        log.info(
+        logger.info(
             f"MPROOM{self.matchID}: {userID} moved to slot {newSlotID}",
         )
         return True
@@ -711,7 +713,7 @@ class Match:
         self.sendUpdates()
 
         # Console output
-        log.info(
+        logger.info(
             f"MPROOM{self.matchID}: Password changed to {self.matchPassword}",
         )
 
@@ -725,7 +727,7 @@ class Match:
         # Set new mods and send update
         self.mods = mods
         self.sendUpdates()
-        log.info(f"MPROOM{self.matchID}: Mods changed to {self.mods}")
+        logger.info("MPROOM{self.matchID}: Mods changed to {self.mods}")
 
     def userHasBeatmap(self, userID: int, has: bool = True):
         """
@@ -787,7 +789,7 @@ class Match:
         )
 
         # Console output
-        log.info(f"MPROOM{self.matchID}: {userID} has failed!")
+        logger.info("MPROOM{self.matchID}: {userID} has failed!")
 
     def invite(self, fro: int, to: int):
         """
@@ -877,7 +879,7 @@ class Match:
         if censoredDataCache is not None:
             glob.streams.broadcast("lobby", censoredDataCache)
         else:
-            log.error(
+            logger.error(
                 "MPROOM{}: Can't send match update packet, match data is None!!!".format(
                     self.matchID,
                 ),
@@ -907,10 +909,10 @@ class Match:
                 if firstTeam == -1:
                     firstTeam = self.slots[i].team
                 elif firstTeam != self.slots[i].team:
-                    log.info(f"MPROOM{self.matchID}: Teams are valid")
+                    logger.info("MPROOM{self.matchID}: Teams are valid")
                     return True
 
-        log.warning(f"MPROOM{self.matchID}: Invalid teams!")
+        logger.warning("MPROOM{self.matchID}: Invalid teams!")
         return False
 
     def start(self):
@@ -960,7 +962,7 @@ class Match:
 
     def abort(self):
         if not self.inProgress:
-            log.warning(f"MPROOM{self.matchID}: Match is not in progress!")
+            logger.warning("MPROOM{self.matchID}: Match is not in progress!")
             return
         self.inProgress = False
         self.isStarting = False
@@ -969,7 +971,7 @@ class Match:
         glob.streams.broadcast(self.playingStreamName, serverPackets.match_abort())
         glob.streams.dispose(self.playingStreamName)
         glob.streams.remove(self.playingStreamName)
-        log.info(f"MPROOM{self.matchID}: Match aborted")
+        logger.info("MPROOM{self.matchID}: Match aborted")
 
     def initializeTeams(self):
         if (

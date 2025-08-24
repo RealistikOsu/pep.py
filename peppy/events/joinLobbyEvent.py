@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from constants import serverPackets
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, _):
@@ -17,4 +19,4 @@ def handle(userToken, _):
         userToken.enqueue(serverPackets.match_create(key))
 
     # Console output
-    log.info(f"{username} has joined multiplayer lobby")
+    logger.info("{username} has joined multiplayer lobby")

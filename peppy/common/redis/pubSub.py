@@ -3,7 +3,9 @@ from __future__ import annotations
 import threading
 
 from common.redis import generalPubSubHandler
-from logger import log
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class listener(threading.Thread):
@@ -35,7 +37,7 @@ class listener(threading.Thread):
         for k, v in self.handlers.items():
             channels.append(k)
         self.pubSub.subscribe(channels)
-        log.info(f"Subscribed to redis pubsub channels: {channels}")
+        logger.info("Subscribed to redis pubsub channels: {channels}")
 
     def processItem(self, item):
         """
@@ -51,7 +53,7 @@ class listener(threading.Thread):
 
             # Make sure the handler exists
             if item["channel"] in self.handlers:
-                log.info(
+                logger.info(
                     "Redis pubsub: {} <- {} ".format(item["channel"], item["data"]),
                 )
                 if isinstance(

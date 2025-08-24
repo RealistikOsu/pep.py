@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import traceback
@@ -19,11 +20,10 @@ from handlers import apiAerisThing
 from handlers import apiOnlineUsersHandler
 from handlers import apiServerStatusHandler
 from handlers import mainHandler
-from helpers import consoleHelper
 from helpers import systemHelper as system
 from helpers.status_helper import StatusManager
 from logger import DEBUG
-from logger import log
+from logger import configure_logging
 from objects import banchoConfig
 from objects import fokabot
 from objects import glob
@@ -35,8 +35,10 @@ from redis_handlers import refreshPrivsHandler
 from redis_handlers import updateSilenceHandler
 from redis_handlers import updateStatsHandler
 
+logger = logging.getLogger(__name__)
 
-def make_app():
+
+def make_app() -> tornado.web.Application:
     return tornado.web.Application(
         [
             (r"/", mainHandler.handler),
@@ -49,156 +51,194 @@ def make_app():
     )
 
 
-def main():
-    ddtrace.patch_all()
+def configure_folders() -> None:
+    """Create necessary data folders."""
+    paths: tuple[str, ...] = (".data",)
+    created_folders: list[str] = []
+
+    for path in paths:
+        if not os.path.exists(path):
+            os.makedirs(path, 0o770)
+            created_folders.append(path)
+
+    if created_folders:
+        logger.info("Created data folders", extra={"folders": created_folders})
+
+
+def configure_mysql() -> None:
+    """Configure MySQL database connection."""
+    logger.info(
+        "Connecting to MySQL database",
+        extra={
+            "host": settings.MYSQL_HOST,
+            "port": settings.MYSQL_PORT,
+            "database": settings.MYSQL_DATABASE,
+            "pool_size": settings.MYSQL_POOL_SIZE,
+        },
+    )
+
+    glob.db = dbConnector.DatabasePool(
+        host=settings.MYSQL_HOST,
+        port=settings.MYSQL_PORT,
+        username=settings.MYSQL_USER,
+        password=settings.MYSQL_PASSWORD,
+        database=settings.MYSQL_DATABASE,
+        initialSize=settings.MYSQL_POOL_SIZE,
+    )
+
+
+def configure_redis() -> None:
+    """Configure Redis connection and initialize cache."""
+    logger.info(
+        "Connecting to Redis",
+        extra={
+            "host": settings.REDIS_HOST,
+            "port": settings.REDIS_PORT,
+            "db": settings.REDIS_DB,
+        },
+    )
+
+    glob.redis = redis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        db=settings.REDIS_DB,
+    )
+    glob.redis.ping()
+
+    # Initialize Redis cache
+    glob.redis.set("ripple:online_users", 0)
     try:
-        # Server start
-        consoleHelper.printServerStartHeader(True)
+        deleted_keys = glob.redis.eval(
+            "return redis.call('del', unpack(redis.call('keys', ARGV[1])))",
+            0,
+            "peppy:*",
+        )
+        if deleted_keys:
+            logger.info("Cleared Redis cache", extra={"deleted_keys": deleted_keys})
+    except redis.exceptions.ResponseError:
+        # Script returns error if there are no keys starting with peppy:*
+        pass
 
-        # Create data folder if needed
-        log.info("Checking folders... ")
-        paths = (".data",)
-        for i in paths:
-            if not os.path.exists(i):
-                os.makedirs(i, 0o770)
-        log.info("Complete!")
+    # Save peppy version in redis
+    glob.redis.set("peppy:version", glob.__version__)
 
-        # Connect to db and redis
-        try:
-            log.info("Connecting to MySQL database... ")
-            glob.db = dbConnector.DatabasePool(
-                host=settings.MYSQL_HOST,
-                port=settings.MYSQL_PORT,
-                username=settings.MYSQL_USER,
-                password=settings.MYSQL_PASSWORD,
-                database=settings.MYSQL_DATABASE,
-                initialSize=settings.MYSQL_POOL_SIZE,
-            )
 
-            log.info("Connecting to redis... ")
-            glob.redis = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                password=settings.REDIS_PASSWORD,
-                db=settings.REDIS_DB,
-            )
-            glob.redis.ping()
-        except Exception:
-            # Exception while connecting to db
-            log.error(
-                "Error while connection to database and redis. Please ensure your config and try again.",
-            )
-            raise
+def configure_bancho_settings() -> None:
+    """Load bancho configuration from database."""
+    glob.banchoConf = banchoConfig.banchoConfig()
 
-        # Empty redis cache
-        try:
-            glob.redis.set("ripple:online_users", 0)
-            glob.redis.eval(
-                "return redis.call('del', unpack(redis.call('keys', ARGV[1])))",
-                0,
-                "peppy:*",
-            )
-        except redis.exceptions.ResponseError:
-            # Script returns error if there are no keys starting with peppy:*
-            pass
 
-        # Save peppy version in redis
-        glob.redis.set("peppy:version", glob.__version__)
+def cleanup_old_sessions() -> None:
+    """Delete old bancho sessions from database."""
+    deleted_count = glob.tokens.deleteBanchoSessions()
+    if deleted_count:
+        logger.info(
+            "Old bancho sessions cleaned up", extra={"deleted_count": deleted_count}
+        )
 
-        # Load bancho_settings
-        try:
-            log.info("Loading bancho settings from DB... ")
-            glob.banchoConf = banchoConfig.banchoConfig()
-            log.info("Complete!")
-        except:
-            log.error(
-                "Error while loading bancho_settings. Please make sure the table in DB has all the required rows",
-            )
-            raise
 
-        # Delete old bancho sessions
-        log.info("Deleting cached bancho sessions from DB... ")
-        glob.tokens.deleteBanchoSessions()
-        log.info("Complete!")
+def configure_thread_pool() -> None:
+    """Create thread pool for HTTP requests."""
+    glob.pool = ThreadPool(settings.HTTP_THREAD_COUNT)
 
-        # Create thread pool
-        log.info("Creating thread pool...")
-        glob.pool = ThreadPool(settings.HTTP_THREAD_COUNT)
-        log.info("Complete!")
 
-        # Start fokabot
-        log.info("Connecting RealistikBot...")
-        fokabot.connect()
-        log.info("Complete!")
+def configure_fokabot() -> None:
+    """Connect to RealistikBot."""
+    fokabot.connect()
 
-        # Initialize chat channels
-        log.info("Initializing chat channels... ")
-        glob.channels.loadChannels()
-        log.info("Complete!")
 
-        # Initialize stremas
-        log.info("Creating packets streams... ")
-        glob.streams.add("main")
-        glob.streams.add("lobby")
-        log.info("Complete!")
+def configure_channels() -> None:
+    """Initialize chat channels."""
+    channel_count = glob.channels.loadChannels()
+    logger.info("Chat channels initialized", extra={"channel_count": channel_count})
 
-        # Initialize user timeout check loop
-        log.info("Initializing user timeout check loop... ")
-        glob.tokens.usersTimeoutCheckLoop()
-        log.info("Complete!")
 
-        # Initialize spam protection reset loop
-        log.info("Initializing spam protection reset loop... ")
-        glob.tokens.spamProtectionResetLoop()
-        log.info("Complete!")
+def configure_streams() -> None:
+    """Create packet streams."""
+    glob.streams.add("main")
+    glob.streams.add("lobby")
 
-        # Initialize multiplayer cleanup loop
-        log.info("Initializing multiplayer cleanup loop... ")
-        glob.matches.cleanupLoop()
-        log.info("Complete!")
 
-        try:
-            log.info("Loading user statuses...")
-            st_man = StatusManager()
-            loaded = st_man.load_from_db()
-            glob.user_statuses = st_man
-            log.info(f"Loaded {loaded} user statuses!")
-        except Exception:
-            log.error(
-                "Loading user statuses failed with error:\n" + traceback.format_exc(),
-            )
-            raise
+def configure_background_tasks() -> None:
+    """Initialize background maintenance tasks."""
+    # User timeout check loop
+    glob.tokens.usersTimeoutCheckLoop()
+
+    # Spam protection reset loop
+    glob.tokens.spamProtectionResetLoop()
+
+    # Multiplayer cleanup loop
+    glob.matches.cleanupLoop()
+
+
+def configure_user_statuses() -> None:
+    """Load user statuses from database."""
+    status_manager = StatusManager()
+    loaded_count = status_manager.load_from_db()
+    glob.user_statuses = status_manager
+
+    logger.info("User statuses loaded", extra={"loaded_count": loaded_count})
+
+
+def configure_pubsub() -> None:
+    """Configure Redis pubsub channels."""
+    pubsub_handlers = {
+        "peppy:disconnect": disconnectHandler.handler(),
+        "peppy:reload_settings": lambda x: x == b"reload" and glob.banchoConf.reload(),
+        "peppy:update_cached_stats": updateStatsHandler.handler(),
+        "peppy:silence": updateSilenceHandler.handler(),
+        "peppy:ban": banHandler.handler(),
+        "peppy:notification": notificationHandler.handler(),
+        "peppy:refresh_privs": refreshPrivsHandler.handler(),
+        "peppy:bot_msg": bot_msg_handler.handler(),
+    }
+
+    pubSub.listener(glob.redis, pubsub_handlers).start()
+
+
+def main() -> None:
+    ddtrace.patch_all()
+
+    # Configure logging
+    configure_logging()
+
+    try:
+        # Configuration sequence
+        configure_folders()
+        configure_mysql()
+        configure_redis()
+        configure_bancho_settings()
+        cleanup_old_sessions()
+        configure_thread_pool()
+        configure_fokabot()
+        configure_channels()
+        configure_streams()
+        configure_background_tasks()
+        configure_user_statuses()
 
         # Debug mode
         glob.debug = DEBUG
         if glob.debug:
-            log.warning("Server running in debug mode!")
+            logger.warning("Server running in debug mode!")
 
         # Make app
         glob.application = make_app()
 
-        # Server start message and console output
-        log.info(
-            f"pep.py listening for HTTP(s) clients on {settings.HTTP_ADDRESS}:{settings.HTTP_PORT}...",
+        # Server start message
+        logger.info(
+            "pep.py server starting",
+            extra={
+                "address": settings.HTTP_ADDRESS,
+                "port": settings.HTTP_PORT,
+                "debug_mode": glob.debug,
+            },
         )
 
-        # Connect to pubsub channels
-        pubSub.listener(
-            glob.redis,
-            {
-                "peppy:disconnect": disconnectHandler.handler(),
-                "peppy:reload_settings": lambda x: x == b"reload"
-                and glob.banchoConf.reload(),
-                "peppy:update_cached_stats": updateStatsHandler.handler(),
-                "peppy:silence": updateSilenceHandler.handler(),
-                "peppy:ban": banHandler.handler(),
-                "peppy:notification": notificationHandler.handler(),
-                "peppy:refresh_privs": refreshPrivsHandler.handler(),
-                "peppy:bot_msg": bot_msg_handler.handler(),
-            },
-        ).start()
+        # Configure pubsub
+        configure_pubsub()
 
-        # We will initialise namespace for fancy stuff. UPDATE: FUCK OFF WEIRD PYTHON MODULE.
+        # Initialize namespace for fancy stuff
         glob.namespace = globals() | {
             mod: __import__(mod) for mod in sys.modules if mod != "glob"
         }

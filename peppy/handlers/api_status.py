@@ -5,8 +5,10 @@ import json
 import tornado.gen
 import tornado.web
 from common.web import requestsManager
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class handler(requestsManager.asyncRequestHandler):

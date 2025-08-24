@@ -4,6 +4,9 @@ import json
 import time
 
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from pymysql.err import ProgrammingError
@@ -16,7 +19,6 @@ import settings
 from common import generalUtils
 from common.constants import gameModes, mods
 from common.constants import privileges
-from logger import log
 from common.ripple import scoreUtils
 from objects import glob
 
@@ -31,7 +33,7 @@ def getBeatmapTime(beatmapID):
         if r != "null\n":
             p = json.loads(r)["TotalLength"]
     except Exception:  # having backup mirror as having this fail literally kills the server
-        log.warning("The default beatmap mirror doesnt work! Using a backup one.")
+        logger.warning("The default beatmap mirror doesnt work! Using a backup one.")
         r = requests.get(f"http://storage.ripple.moe/api/b/{beatmapID}", timeout=2).text
         if r != "null\n":
             p = json.loads(r)["TotalLength"]
@@ -868,7 +870,7 @@ def updateStats(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        log.warning(f"User {userID} doesn't exist.")
+        logger.warning("User {userID} doesn't exist.")
         return
 
     # Get gamemode for db
@@ -919,7 +921,7 @@ def updateStatsRx(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        log.warning(f"User {userID} doesn't exist.")
+        logger.warning("User {userID} doesn't exist.")
         return
 
     # Get gamemode for db
@@ -970,7 +972,7 @@ def updateStatsAP(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        log.warning(f"User {userID} doesn't exist.")
+        logger.warning("User {userID} doesn't exist.")
         return
 
     # Get gamemode for db
@@ -1443,7 +1445,7 @@ def silence(userID, seconds, silenceReason, author=None):
     targetUsername = getUsername(userID)
     # TODO: exists check im drunk rn i need to sleep (stampa piede ubriaco confirmed)
     if seconds > 0:
-        log.info(
+        logger.info(
             'has silenced {} for {} seconds for the following reason: "{}"'.format(
                 targetUsername,
                 seconds,
@@ -1451,7 +1453,7 @@ def silence(userID, seconds, silenceReason, author=None):
             ),
         )
     else:
-        log.rap(author, f"has removed {targetUsername}'s silence", True)
+        logger.info("RAP: author, f"has removed {targetUsername}'s silence", True")
 
 
 def getTotalScore(userID, gameMode):
@@ -1812,7 +1814,7 @@ def logHardware(
     """
     # Make sure the strings are not empty
     if len(hashes) != 5 or not all(hashes[2:5]):
-        log.warning(f"User {user_id} has sent an empty hwid hash set {hashes}.")
+        logger.warning("User {user_id} has sent an empty hwid hash set {hashes}.")
         return False
 
     if not is_restricted:
@@ -1835,7 +1837,7 @@ def logHardware(
 
         if matching_users:
             # User has a matching hwid, ban him
-            log.warning(
+            logger.warning(
                 f"User {user_id} has a matching hwid with user IDs: {matching_users!r}.",
             )
 
@@ -1937,7 +1939,7 @@ def verifyUser(userID, hashes):
     # Check for valid hash set
     for i in hashes[2:5]:
         if i == "":
-            log.warning(
+            logger.warning(
                 "Invalid hash set ({}) for user {} while verifying the account".format(
                     str(hashes),
                     userID,
@@ -1955,17 +1957,17 @@ def verifyUser(userID, hashes):
         or hashes[4] == "ffae06fb022871fe9beb58b005c5e21d"
     ):
         # Running under wine, check only by uniqueid
-        log.info(
+        logger.info(
             f"{username} ({userID}) ha triggerato Sannino\nUsual wine mac address hash: b4ec3c4334a0249dae95c284ec5983df\nUsual wine disk id: ffae06fb022871fe9beb58b005c5e21d",
         )
-        log.debug("Veryfing with Linux/Mac hardware")
+        logger.debug("Veryfing with Linux/Mac hardware")
         match = glob.db.fetchAll(
             "SELECT userid FROM hw_user WHERE unique_id = %(uid)s AND userid != %(userid)s AND activated = 1 LIMIT 1",
             {"uid": hashes[3], "userid": userID},
         )
     else:
         # Running under windows, full check
-        log.debug("Veryfing with Windows hardware")
+        logger.debug("Veryfing with Windows hardware")
         match = glob.db.fetchAll(
             "SELECT userid FROM hw_user WHERE mac = %(mac)s AND unique_id = %(uid)s AND disk_id = %(diskid)s AND userid != %(userid)s AND activated = 1 LIMIT 1",
             {"mac": hashes[2], "uid": hashes[3], "diskid": hashes[4], "userid": userID},
@@ -1985,7 +1987,7 @@ def verifyUser(userID, hashes):
 
         # If they are explicitly allowed to multiacc
         if user_data["bypass_hwid"]:
-            log.warning(f"Allowed user {username} to bypass hwid check.")
+            logger.warning("Allowed user {username} to bypass hwid check.")
             return True
 
         # Ban this user and append notes
@@ -2007,7 +2009,7 @@ def verifyUser(userID, hashes):
         restrict(originalUserID)
 
         # Discord message
-        log.warning(
+        logger.warning(
             "User **{originalUsername}** ({originalUserID}) has been restricted because he has created multiaccount **{username}** ({userID}). The multiaccount has been banned.".format(
                 originalUsername=originalUsername,
                 originalUserID=originalUserID,

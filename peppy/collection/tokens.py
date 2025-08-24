@@ -11,9 +11,11 @@ from constants import serverPackets
 from constants.exceptions import periodicLoopException
 from events import logoutEvent
 from helpers.user_helper import username_safe
-from logger import log
 from objects import glob
 from objects.osuToken import UserToken
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TokenList:
@@ -161,7 +163,7 @@ class TokenList:
         :return:
         """
         try:
-            log.debug("Checking timed out clients")
+            logger.debug("Checking timed out clients")
             exceptions = []
             timeoutLimit = int(time.time()) - 100
             for key, value in self.tokens.items():
@@ -174,7 +176,7 @@ class TokenList:
                 ):
                     # That user has timed out, add to disconnected tokens
                     # We can't delete it while iterating or items() throws an error
-                    log.debug(f"{value.username} timed out!!")
+                    logger.debug("{value.username} timed out!!")
                     value.enqueue(
                         serverPackets.notification(
                             "Your connection to the server timed out.",
@@ -184,7 +186,7 @@ class TokenList:
                         logoutEvent.handle(value)
                     except Exception as e:
                         exceptions.append(e)
-                        log.error(
+                        logger.error(
                             "Something wrong happened while disconnecting a timed out client.",
                         )
 

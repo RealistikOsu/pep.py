@@ -3,8 +3,10 @@ from __future__ import annotations
 from common.constants import mods
 from constants import clientPackets
 from constants import serverPackets
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -96,6 +98,6 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
             glob.tokens.tokens[i].enqueue(p)
 
     # Console output
-    log.info(
+    logger.info(
         f"{username} updated their presence! [Action ID: {userToken.actionID} // Action Text: {userToken.actionText}]",
     )

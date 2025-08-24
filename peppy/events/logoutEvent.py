@@ -5,8 +5,10 @@ import time
 
 from constants import serverPackets
 from helpers import chatHelper as chat
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, _=None, deleteToken=True):
@@ -46,7 +48,7 @@ def handle(userToken, _=None, deleteToken=True):
         # Change username if needed
         newUsername = glob.redis.get(f"ripple:change_username_pending:{userID}")
         if newUsername is not None:
-            log.debug(f"Sending username change request for user {userID}")
+            logger.debug("Sending username change request for user {userID}")
             glob.redis.publish(
                 "peppy:change_username",
                 json.dumps(
@@ -55,4 +57,4 @@ def handle(userToken, _=None, deleteToken=True):
             )
 
         # Console output
-        log.info(f"{username} has been disconnected. (logout)")
+        logger.info("{username} has been disconnected. (logout)")

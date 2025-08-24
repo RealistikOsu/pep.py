@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from objects.osuToken import UserToken
@@ -37,7 +39,7 @@ class Stream:
         if client is not None:
             token = client.token
         if token not in self.clients:
-            log.info(f"{token} has joined stream {self.name}")
+            logger.info("{token} has joined stream {self.name}")
             self.clients.append(token)
             return True
 
@@ -60,7 +62,7 @@ class Stream:
         if client is not None:
             token = client.token
         if token in self.clients:
-            log.info(f"{token} has left stream {self.name}")
+            logger.info("{token} has left stream {self.name}")
             self.clients.remove(token)
 
     def broadcast(self, data: bytes, but: Optional[list[str]] = None) -> None:

@@ -6,8 +6,10 @@ from typing import Any
 from typing import Optional
 
 import MySQLdb
-from logger import log
 from MySQLdb.connections import Connection
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Worker:
@@ -29,7 +31,7 @@ class Worker:
         """
         self.connection = connection
         self.temporary = temporary
-        log.debug(f"Created MySQL worker. Temporary: {self.temporary}")
+        logger.debug("Created MySQL worker. Temporary: {self.temporary}")
 
     def __del__(self) -> None:
         """
@@ -109,7 +111,7 @@ class ConnectionPool:
         try:
             if self.pool.empty():
                 # The pool is empty. Spawn a new temporary worker
-                log.warning("MySQL connections pool is empty. Using temporary worker.")
+                logger.warning("MySQL connections pool is empty. Using temporary worker.")
                 worker = self.newWorker(temporary=True)
 
                 # Increment saturation
@@ -117,7 +119,7 @@ class ConnectionPool:
 
                 # If the pool is usually empty, expand it
                 if self.consecutiveEmptyPool >= 10:
-                    log.warning(
+                    logger.warning(
                         "MySQL connections pool is empty. Filling connections pool.",
                     )
                     self.fillPool()
@@ -129,7 +131,7 @@ class ConnectionPool:
         except MySQLdb.OperationalError:
             # Connection to server lost
             # Wait 1 second and try again
-            log.warning("Can't connect to MySQL database. Retrying in 1 second...")
+            logger.warning("Can't connect to MySQL database. Retrying in 1 second...")
             time.sleep(1)
             return self.getWorker()
 
@@ -194,7 +196,7 @@ class DatabasePool:
             # Create cursor, execute query and commit
             cursor = worker.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute(query, params)
-            log.debug(query)
+            logger.debug(query)
             return cursor.lastrowid
         finally:
             # Close the cursor and release worker's lock
@@ -218,7 +220,7 @@ class DatabasePool:
             # Create cursor, execute the query and fetch one/all result(s)
             cursor = worker.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute(query, params)
-            log.debug(query)
+            logger.debug(query)
             return cursor.fetchone()
         finally:
             # Close the cursor and release worker's lock
@@ -244,7 +246,7 @@ class DatabasePool:
             # Create cursor, execute the query and fetch one/all result(s)
             cursor = worker.connection.cursor(MySQLdb.cursors.DictCursor)
             cursor.execute(query, params)
-            log.debug(query)
+            logger.debug(query)
             return cursor.fetchall()
         finally:
             # Close the cursor and release worker's lock

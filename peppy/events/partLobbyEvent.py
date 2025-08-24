@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from helpers import chatHelper as chat
-from logger import log
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, _):
@@ -16,4 +18,4 @@ def handle(userToken, _):
     chat.partChannel(channel="#lobby", token=userToken, kick=True)
 
     # Console output
-    log.info(f"{username} has left multiplayer lobby")
+    logger.info("{username} has left multiplayer lobby")

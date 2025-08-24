@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from constants import clientPackets
 from constants import serverPackets
-from logger import log
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -11,11 +13,11 @@ def handle(userToken, packetData):
 
     # Process lists with length <= 32
     if len(packetData) > 32:
-        log.warning("Received userStatsRequest with length > 32")
+        logger.warning("Received userStatsRequest with length > 32")
         return
 
     for i in packetData["users"]:
-        log.debug(f"Sending stats for user {i}")
+        logger.debug("Sending stats for user {i}")
 
         # Skip our stats
         if i == userToken.userID:

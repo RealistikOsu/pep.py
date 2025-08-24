@@ -5,9 +5,11 @@ import time
 
 from constants import serverPackets
 from constants.exceptions import periodicLoopException
-from logger import log
 from objects import glob
 from objects.match import Match
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MatchList:
@@ -92,7 +94,7 @@ class MatchList:
         # Send match dispose packet to everyone in lobby
         glob.streams.broadcast("lobby", serverPackets.match_dispose(matchID))
         del self.matches[matchID]
-        log.info(f"MPROOM{matchID}: Room disposed manually")
+        logger.info("MPROOM{matchID}: Room disposed manually")
 
     def cleanupLoop(self) -> None:
         """
@@ -104,7 +106,7 @@ class MatchList:
         :return:
         """
         try:
-            log.debug("Checking empty matches")
+            logger.debug("Checking empty matches")
             t = int(time.time())
             emptyMatches = []
             exceptions = []
@@ -114,7 +116,7 @@ class MatchList:
                 if [x for x in m.slots if x.user is not None]:
                     continue
                 if t - m.createTime >= 120:
-                    log.debug(f"Match #{m.matchID} marked for cleanup")
+                    logger.debug("Match #{m.matchID} marked for cleanup")
                     emptyMatches.append(m.matchID)
 
             # Dispose all empty matches
@@ -123,7 +125,7 @@ class MatchList:
                     self.match_dispose(matchID)
                 except Exception as e:
                     exceptions.append(e)
-                    log.error(
+                    logger.error(
                         "Something wrong happened while disposing a timed out match.",
                     )
 

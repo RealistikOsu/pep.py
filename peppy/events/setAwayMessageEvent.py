@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from constants import clientPackets
 from constants import serverPackets
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -24,7 +26,7 @@ def handle(userToken, packetData):
     userToken.enqueue(
         serverPackets.message_notify(glob.BOT_NAME, username, fokaMessage),
     )
-    log.info(
+    logger.info(
         "{} has changed their away message to: {}".format(
             username,
             packetData["awayMessage"],

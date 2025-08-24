@@ -5,9 +5,11 @@ from typing import Optional
 import settings
 import tornado.gen
 import tornado.web
-from logger import log
 from objects import glob
 from tornado.ioloop import IOLoop
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class asyncRequestHandler(tornado.web.RequestHandler):
@@ -106,4 +108,4 @@ def printArguments(t):
     msg = "ARGS::"
     for i in t.request.arguments:
         msg += f"{i}={t.get_argument(i)}\r\n"
-    log.debug(msg)
+    logger.debug(msg)

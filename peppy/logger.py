@@ -1,65 +1,31 @@
 from __future__ import annotations
 
 import logging
-import os
+import logging.config
 import sys
-import time
-from enum import IntEnum
-from typing import Any
-from typing import Optional
+from pathlib import Path
 
-from pythonjsonlogger import jsonlogger
+import yaml
 
+# Debug mode detection
 DEBUG = "debug" in sys.argv
+
+
+def configure_logging() -> None:
+    """Configure logging from logging.yaml file."""
+    config_file = Path("logging.yaml")
+
+    if not config_file.exists():
+        raise FileNotFoundError(f"Logging configuration file not found: {config_file}")
+
+    with open(config_file, "r") as f:
+        config = yaml.safe_load(f)
+
+    logging.config.dictConfig(config)
+
+
+# Export for backward compatibility during transition
 __all__ = (
-    "info",
-    "error",
-    "warning",
-    "debug",
+    "configure_logging",
+    "DEBUG",
 )
-
-logging.basicConfig(
-    level="DEBUG",
-)
-
-logger = logging.getLogger()
-logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter()
-logHandler.setFormatter(formatter)
-logger.addHandler(logHandler)
-
-
-def info(text: str, *, extra: Optional[dict[str, Any]] = None):
-    logger.info(text, extra=extra)
-
-
-def error(text: str, *, extra: Optional[dict[str, Any]] = None):
-    logger.error(text, extra=extra)
-
-
-def warning(text: str, *, extra: Optional[dict[str, Any]] = None):
-    logger.warn(text, extra=extra)
-
-
-def debug(text: str, *, extra: Optional[dict[str, Any]] = None):
-    logger.debug(text, extra=extra)
-
-
-class Logger:
-    def debug(self, message: str):
-        debug(message)
-
-    def info(self, message: str):
-        info(message)
-
-    def error(self, message: str):
-        error(message)
-
-    def warning(self, message: str):
-        warning(message)
-
-    def rap(self, userID, message, discord=False, through=None):
-        info(f"RAP: {userID} {message}")
-
-
-log = Logger()

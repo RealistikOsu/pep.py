@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import sys
 import traceback
 
@@ -55,8 +56,9 @@ from events import tournamentMatchInfoRequestEvent
 from events import userPanelRequestEvent
 from events import userStatsRequestEvent
 from helpers import packetHelper
-from logger import log
 from objects import glob
+
+logger = logging.getLogger(__name__)
 
 # Placing this here so we do not have to register this every conn.
 
@@ -168,18 +170,20 @@ class handler(requestsManager.asyncRequestHandler):
                             ):
                                 eventHandler[packetID].handle(userToken, packetData)
                             else:
-                                log.warning(
-                                    "Ignored packet id from {} ({}) (user is restricted)".format(
-                                        requestTokenString,
-                                        packetID,
-                                    ),
+                                logger.warning(
+                                    "Ignored packet id from user (user is restricted)",
+                                    extra={
+                                        "token": requestTokenString,
+                                        "packet_id": packetID,
+                                    },
                                 )
                         else:
-                            log.warning(
-                                "Unknown packet id from {} ({})".format(
-                                    requestTokenString,
-                                    packetID,
-                                ),
+                            logger.warning(
+                                "Unknown packet id from user",
+                                extra={
+                                    "token": requestTokenString,
+                                    "packet_id": packetID,
+                                },
                             )
 
                     # Update pos so we can read the next stacked packet
@@ -196,7 +200,7 @@ class handler(requestsManager.asyncRequestHandler):
                     f"You don't seem to be logged into {settings.PS_NAME} anymore... "
                     "This is common during server restarts, trying to log you back in.",
                 )
-                log.warning(
+                logger.warning(
                     "Received unknown token! This is normal during server restarts. Reconnecting them.",
                 )
             finally:

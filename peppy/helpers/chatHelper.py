@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
@@ -10,9 +11,10 @@ from common.ripple import userUtils
 from constants import exceptions
 from constants import serverPackets
 from events import logoutEvent
-from logger import log
 from objects import fokabot
 from objects import glob
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from objects.osuToken import UserToken
@@ -56,31 +58,33 @@ def joinChannel(
         token.joinChannel(channelObject)
 
         # Console output
-        log.info(f"{token.username} joined channel {channel}")
+        logger.info(
+            "User joined channel",
+            extra={"username": token.username, "channel": channel},
+        )
 
         # IRC code return
         return 0
     except exceptions.channelNoPermissionsException:
-        log.warning(
-            "{} attempted to join channel {}, but they have no read permissions".format(
-                token.username,
-                channel,
-            ),
+        logger.warning(
+            "User attempted to join channel but has no read permissions",
+            extra={"username": token.username, "channel": channel},
         )
         return 403
     except exceptions.channelUnknownException:
-        log.warning(
-            "{} attempted to join an unknown channel ({})".format(
-                token.username,
-                channel,
-            ),
+        logger.warning(
+            "User attempted to join an unknown channel",
+            extra={"username": token.username, "channel": channel},
         )
         return 403
     except exceptions.userAlreadyInChannelException:
-        log.warning(f"User {token.username} already in channel {channel}")
+        logger.warning(
+            "User already in channel",
+            extra={"username": token.username, "channel": channel},
+        )
         return 403
     except exceptions.userNotFoundException:
-        log.warning("User not connected to IRC/Bancho")
+        logger.warning("User not connected to IRC/Bancho")
         return 403  # idk
 
 
@@ -164,26 +168,27 @@ def partChannel(
             token.enqueue(serverPackets.channel_kicked(channelClient))
 
         # Console output
-        log.info(
-            f"{token.username} parted channel {channel} ({channelClient})",
+        logger.info(
+            "User parted channel",
+            extra={
+                "username": token.username,
+                "channel": channel,
+                "channel_client": channelClient,
+            },
         )
 
     except exceptions.channelUnknownException:
-        log.warning(
-            "{} attempted to part an unknown channel ({})".format(
-                token.username,
-                channel,
-            ),
+        logger.warning(
+            "User attempted to part an unknown channel",
+            extra={"username": token.username, "channel": channel},
         )
     except exceptions.userNotInChannelException:
-        log.warning(
-            "{} attempted to part {}, but he's not in that channel".format(
-                token.username,
-                channel,
-            ),
+        logger.warning(
+            "User attempted to part channel but not in that channel",
+            extra={"username": token.username, "channel": channel},
         )
     except exceptions.userNotFoundException:
-        log.warning("User not connected to IRC/Bancho")
+        logger.warning("User not connected to IRC/Bancho")
 
 
 def log_message_db(fro: UserToken, to_id: Union[int, str], content: str) -> None:
@@ -361,63 +366,58 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
         if to.startswith("#") and not (
             message.startswith("\x01ACTION is playing") and to.startswith("#spect_")
         ):
-            log.info(
-                "{fro} @ {to}: {message}".format(
-                    fro=token.username,
-                    to=to,
-                    message=message.encode("utf-8").decode("utf-8"),
-                ),
+            logger.info(
+                "Public chat message",
+                extra={
+                    "username": token.username,
+                    "channel": to,
+                    "message": message.encode("utf-8").decode("utf-8"),
+                },
             )
         return 0
     except exceptions.userSilencedException:
         token.enqueue(serverPackets.silence_end_notify(token.getSilenceSecondsLeft()))
-        log.warning(f"{token.username} tried to send a message during silence")
+        logger.warning(
+            "User tried to send a message during silence",
+            extra={"username": token.username},
+        )
         return 404
     except exceptions.channelModeratedException:
-        log.warning(
-            "{} tried to send a message to a channel that is in moderated mode ({})".format(
-                token.username,
-                to,
-            ),
+        logger.warning(
+            "User tried to send a message to a channel that is in moderated mode",
+            extra={"username": token.username, "channel": to},
         )
         return 404
     except exceptions.channelUnknownException:
-        log.warning(
-            "{} tried to send a message to an unknown channel ({})".format(
-                token.username,
-                to,
-            ),
+        logger.warning(
+            "User tried to send a message to an unknown channel",
+            extra={"username": token.username, "channel": to},
         )
         return 403
     except exceptions.channelNoPermissionsException:
-        log.warning(
-            "{} tried to send a message to channel {}, but they have no write permissions".format(
-                token.username,
-                to,
-            ),
+        logger.warning(
+            "User tried to send a message to channel but has no write permissions",
+            extra={"username": token.username, "channel": to},
         )
         return 404
     except exceptions.userRestrictedException:
-        log.warning(
-            "{} tried to send a message {}, but the recipient is in restricted mode".format(
-                token.username,
-                to,
-            ),
+        logger.warning(
+            "User tried to send a message but recipient is in restricted mode",
+            extra={"username": token.username, "recipient": to},
         )
         return 404
     except exceptions.userTournamentException:
-        log.warning(
-            "{} tried to send a message {}, but the recipient is a tournament client".format(
-                token.username,
-                to,
-            ),
+        logger.warning(
+            "User tried to send a message but recipient is a tournament client",
+            extra={"username": token.username, "recipient": to},
         )
         return 404
     except exceptions.userNotFoundException:
-        log.warning("User not connected to IRC/Bancho")
+        logger.warning("User not connected to IRC/Bancho")
         return 401
     except exceptions.invalidArgumentsException:
-        log.warning(
-            f"{token.username} tried to send an invalid message to {to}",
+        logger.warning(
+            "User tried to send an invalid message",
+            extra={"username": token.username, "recipient": to},
         )
         return 404

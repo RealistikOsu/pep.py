@@ -18,8 +18,10 @@ from helpers.timing import Timer
 from helpers.user_helper import get_country
 from helpers.user_helper import set_country
 from helpers.user_helper import verify_password
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 UNFREEZE_NOTIF = serverPackets.notification(
     "Thank you for providing a liveplay! You have proven your legitemacy and "
@@ -61,7 +63,7 @@ def handle(tornadoRequest):
     try:
         # Make sure loginData is valid
         if len(loginData) < 3:
-            log.error("Login error (invalid login data)!")
+            logger.error("Login error (invalid login data)!")
             raise exceptions.invalidArgumentsException()
 
         # Get HWID, MAC address and more
@@ -92,7 +94,7 @@ def handle(tornadoRequest):
 
         if not user_db:
             # Invalid username
-            log.error(f"Login failed for user {username} (user not found)!")
+            logger.error("Login failed for user {username} (user not found)!")
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: This user does not exist!",
             )
@@ -109,7 +111,7 @@ def handle(tornadoRequest):
 
         if not verify_password(userID, loginData[1]):
             # Invalid password
-            log.error(f"Login failed for user {username} (invalid password)!")
+            logger.error("Login failed for user {username} (invalid password)!")
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
@@ -117,7 +119,7 @@ def handle(tornadoRequest):
 
         # Make sure we are not banned or locked
         if (not priv & 3 > 0) and (not priv & privileges.USER_PENDING_VERIFICATION):
-            log.error(f"Login failed for user {username} (user is banned)!")
+            logger.error("Login failed for user {username} (user is banned)!")
             raise exceptions.loginBannedException()
 
         # Verify this user (if pending activation)
@@ -129,11 +131,11 @@ def handle(tornadoRequest):
         ):
             if userUtils.verifyUser(userID, clientData):
                 # Valid account
-                log.info(f"Account {userID} verified successfully!")
+                logger.info("Account {userID} verified successfully!")
                 firstLogin = True
             else:
                 # Multiaccount detected
-                log.info(f"Account {userID} NOT verified!")
+                logger.info("Account {userID} NOT verified!")
                 raise exceptions.loginBannedException()
 
         # Check restricted mode (and eventually send message)
@@ -270,7 +272,7 @@ def handle(tornadoRequest):
         # Ainu Client 2020 update
         if not priv & privileges.USER_BOT:
             if tornadoRequest.request.headers.get("ainu"):
-                log.info(f"Account {userID} tried to use Ainu Client 2020!")
+                logger.info("Account {userID} tried to use Ainu Client 2020!")
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -290,7 +292,7 @@ def handle(tornadoRequest):
                 "b20190401.22f56c084ba339eefd9c7ca4335e246f80",
                 "b20191223.3",
             ):
-                log.info(f"Account {userID} tried to use Ainu Client!")
+                logger.info("Account {userID} tried to use Ainu Client!")
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -305,7 +307,7 @@ def handle(tornadoRequest):
                     raise exceptions.loginCheatClientsException()
             # hqOsu
             elif osuVersion == "b20190226.2":
-                log.info(f"Account {userID} tried to use hqOsu!")
+                logger.info("Account {userID} tried to use hqOsu!")
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Comedian."))
                 else:
@@ -321,7 +323,7 @@ def handle(tornadoRequest):
 
             # hqosu legacy
             elif osuVersion == "b20190716.5":
-                log.info(f"Account {userID} tried to use hqOsu legacy!")
+                logger.info("Account {userID} tried to use hqOsu legacy!")
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Comedian."))
                 else:
@@ -462,7 +464,7 @@ def handle(tornadoRequest):
             notif += f"\n- Elapsed: {t_str}!"
         responseToken.enqueue(serverPackets.notification(notif))
 
-        log.info(f"Authentication attempt took {t_str}!")
+        logger.info("Authentication attempt took {t_str}!")
 
         # Set reponse data to right value and reset our queue
         responseData = responseToken.fetch_queue()
@@ -505,7 +507,7 @@ def handle(tornadoRequest):
     except exceptions.botAccountException:
         return "no", BOT_ACCOUNT_RESPONSE + serverPackets.login_failed()
     except Exception:
-        log.error(
+        logger.error(
             "Unknown error!\n```\n{}\n{}```".format(
                 sys.exc_info(),
                 traceback.format_exc(),

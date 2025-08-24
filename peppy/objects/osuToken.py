@@ -16,8 +16,10 @@ from constants import serverPackets
 from constants.rosuprivs import ADMIN_PRIVS
 from events import logoutEvent
 from helpers import chatHelper as chat
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from objects.channel import Channel
@@ -295,7 +297,7 @@ class UserToken:
                     )
 
             # Log
-            log.info(f"{self.username} is spectating {host.username}")
+            logger.info("{self.username} is spectating {host.username}")
 
     def stopSpectating(self) -> None:
         """
@@ -341,7 +343,7 @@ class UserToken:
                     hostToken.leaveStream(streamName)
 
                 # Console output
-                log.info(
+                logger.info(
                     "{} is no longer spectating {}. Current spectators: {}".format(
                         self.username,
                         self.spectatingUserID,
@@ -466,7 +468,7 @@ class UserToken:
         :return:
         """
         # Send packet to target
-        log.info(f"{self.username} has been disconnected. ({reason})")
+        logger.info("{self.username} has been disconnected. ({reason})")
         if message != "":
             self.enqueue(serverPackets.notification(message))
         self.enqueue(serverPackets.login_failed())

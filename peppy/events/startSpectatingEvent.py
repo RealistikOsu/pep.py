@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from constants import clientPackets
 from constants import exceptions
-from logger import log
 from objects import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -25,5 +27,5 @@ def handle(userToken, packetData):
         userToken.startSpectating(targetToken)
     except exceptions.tokenNotFoundException:
         # Stop spectating if token not found
-        log.warning("Spectator start: token not found")
+        logger.warning("Spectator start: token not found")
         userToken.stopSpectating()
