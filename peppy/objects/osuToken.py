@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 import uuid
@@ -17,7 +18,6 @@ from constants.rosuprivs import ADMIN_PRIVS
 from events import logoutEvent
 from helpers import chatHelper as chat
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +297,10 @@ class UserToken:
                     )
 
             # Log
-            logger.info("User is spectating", extra={"username": self.username, "host": host.username})
+            logger.info(
+                "User is spectating",
+                extra={"username": self.username, "host": host.username},
+            )
 
     def stopSpectating(self) -> None:
         """
@@ -468,7 +471,9 @@ class UserToken:
         :return:
         """
         # Send packet to target
-        logger.info("User disconnected", extra={"username": self.username, "reason": reason})
+        logger.info(
+            "User disconnected", extra={"username": self.username, "reason": reason},
+        )
         if message != "":
             self.enqueue(serverPackets.notification(message))
         self.enqueue(serverPackets.login_failed())

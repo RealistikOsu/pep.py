@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 
 import tornado.gen
 import tornado.web
 from common.web import requestsManager
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 

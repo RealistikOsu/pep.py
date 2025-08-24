@@ -40,7 +40,7 @@ class Stream:
             token = client.token
         if token not in self.clients:
             logger.info(
-                "Token joined stream", extra={"token": token, "stream": self.name}
+                "Token joined stream", extra={"token": token, "stream": self.name},
             )
             self.clients.append(token)
             return True
@@ -65,7 +65,7 @@ class Stream:
             token = client.token
         if token in self.clients:
             logger.info(
-                "Token left stream", extra={"token": token, "stream": self.name}
+                "Token left stream", extra={"token": token, "stream": self.name},
             )
             self.clients.remove(token)
 

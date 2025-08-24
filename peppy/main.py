@@ -22,8 +22,8 @@ from handlers import apiServerStatusHandler
 from handlers import mainHandler
 from helpers import systemHelper as system
 from helpers.status_helper import StatusManager
-from logger import DEBUG
 from logger import configure_logging
+from logger import DEBUG
 from objects import banchoConfig
 from objects import fokabot
 from objects import glob
@@ -134,7 +134,7 @@ def cleanup_old_sessions() -> None:
     deleted_count = glob.tokens.deleteBanchoSessions()
     if deleted_count:
         logger.info(
-            "Old bancho sessions cleaned up", extra={"deleted_count": deleted_count}
+            "Old bancho sessions cleaned up", extra={"deleted_count": deleted_count},
         )
 
 

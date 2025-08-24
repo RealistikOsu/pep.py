@@ -116,7 +116,9 @@ class MatchList:
                 if [x for x in m.slots if x.user is not None]:
                     continue
                 if t - m.createTime >= 120:
-                    logger.debug("Match marked for cleanup", extra={"match_id": m.matchID})
+                    logger.debug(
+                        "Match marked for cleanup", extra={"match_id": m.matchID},
+                    )
                     emptyMatches.append(m.matchID)
 
             # Dispose all empty matches

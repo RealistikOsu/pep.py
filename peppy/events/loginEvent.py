@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 import sys
 import time
@@ -19,7 +20,6 @@ from helpers.user_helper import get_country
 from helpers.user_helper import set_country
 from helpers.user_helper import verify_password
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,9 @@ def handle(tornadoRequest):
 
         if not verify_password(userID, loginData[1]):
             # Invalid password
-            logger.error("Login failed - invalid password", extra={"username": username})
+            logger.error(
+                "Login failed - invalid password", extra={"username": username},
+            )
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
@@ -272,7 +274,9 @@ def handle(tornadoRequest):
         # Ainu Client 2020 update
         if not priv & privileges.USER_BOT:
             if tornadoRequest.request.headers.get("ainu"):
-                logger.info("Account tried to use Ainu Client 2020", extra={"user_id": userID})
+                logger.info(
+                    "Account tried to use Ainu Client 2020", extra={"user_id": userID},
+                )
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -292,7 +296,9 @@ def handle(tornadoRequest):
                 "b20190401.22f56c084ba339eefd9c7ca4335e246f80",
                 "b20191223.3",
             ):
-                logger.info("Account tried to use Ainu Client", extra={"user_id": userID})
+                logger.info(
+                    "Account tried to use Ainu Client", extra={"user_id": userID},
+                )
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -323,7 +329,9 @@ def handle(tornadoRequest):
 
             # hqosu legacy
             elif osuVersion == "b20190716.5":
-                logger.info("Account tried to use hqOsu legacy", extra={"user_id": userID})
+                logger.info(
+                    "Account tried to use hqOsu legacy", extra={"user_id": userID},
+                )
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Comedian."))
                 else:

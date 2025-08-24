@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from constants import clientPackets
 from constants import serverPackets
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 

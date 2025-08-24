@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from helpers import chatHelper as chat
 import logging
+
+from helpers import chatHelper as chat
 
 logger = logging.getLogger(__name__)
 

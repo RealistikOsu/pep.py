@@ -111,7 +111,9 @@ class ConnectionPool:
         try:
             if self.pool.empty():
                 # The pool is empty. Spawn a new temporary worker
-                logger.warning("MySQL connections pool is empty. Using temporary worker.")
+                logger.warning(
+                    "MySQL connections pool is empty. Using temporary worker.",
+                )
                 worker = self.newWorker(temporary=True)
 
                 # Increment saturation

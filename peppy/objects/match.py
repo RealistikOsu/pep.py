@@ -196,7 +196,10 @@ class Match:
         self.hostUserID = newHost
         token.enqueue(serverPackets.match_new_host_notify())
         self.sendUpdates()
-        logger.info("User is now match host", extra={"match_id": self.matchID, "username": token.username})
+        logger.info(
+            "User is now match host",
+            extra={"match_id": self.matchID, "username": token.username},
+        )
         return True
 
     def removeHost(self) -> None:
@@ -346,7 +349,9 @@ class Match:
 
         # Set loaded to True
         self.slots[slotID].loaded = True
-        logger.info("User loaded in match", extra={"match_id": self.matchID, "user_id": userID})
+        logger.info(
+            "User loaded in match", extra={"match_id": self.matchID, "user_id": userID},
+        )
 
         # Check all loaded
         total = 0
@@ -370,7 +375,9 @@ class Match:
             self.playingStreamName,
             serverPackets.match_all_players_loaded(),
         )
-        logger.info("All players loaded - match starting", extra={"match_id": self.matchID})
+        logger.info(
+            "All players loaded - match starting", extra={"match_id": self.matchID},
+        )
 
     def playerSkip(self, userID: int) -> None:
         """
@@ -385,7 +392,9 @@ class Match:
 
         # Set skip to True
         self.slots[slotID].skip = True
-        logger.info("User skipped in match", extra={"match_id": self.matchID, "user_id": userID})
+        logger.info(
+            "User skipped in match", extra={"match_id": self.matchID, "user_id": userID},
+        )
 
         # Send skip packet to every playing user
         # glob.streams.broadcast(self.playingStreamName, serverPackets.match_player_skipped(glob.tokens.tokens[self.slots[slotID].user].userID))
@@ -644,7 +653,10 @@ class Match:
         self.sendUpdates()
 
         # Console output
-        logger.info("User left match room", extra={"match_id": self.matchID, "username": user.username})
+        logger.info(
+            "User left match room",
+            extra={"match_id": self.matchID, "username": user.username},
+        )
 
     def userChangeSlot(self, userID: int, newSlotID: int) -> bool:
         """
@@ -727,7 +739,9 @@ class Match:
         # Set new mods and send update
         self.mods = mods
         self.sendUpdates()
-        logger.info("Match mods changed", extra={"match_id": self.matchID, "mods": self.mods})
+        logger.info(
+            "Match mods changed", extra={"match_id": self.matchID, "mods": self.mods},
+        )
 
     def userHasBeatmap(self, userID: int, has: bool = True):
         """
@@ -789,7 +803,9 @@ class Match:
         )
 
         # Console output
-        logger.info("User failed in match", extra={"match_id": self.matchID, "user_id": userID})
+        logger.info(
+            "User failed in match", extra={"match_id": self.matchID, "user_id": userID},
+        )
 
     def invite(self, fro: int, to: int):
         """
@@ -909,7 +925,9 @@ class Match:
                 if firstTeam == -1:
                     firstTeam = self.slots[i].team
                 elif firstTeam != self.slots[i].team:
-                    logger.info("Match teams are valid", extra={"match_id": self.matchID})
+                    logger.info(
+                        "Match teams are valid", extra={"match_id": self.matchID},
+                    )
                     return True
 
         logger.warning("Match teams are invalid", extra={"match_id": self.matchID})

@@ -57,4 +57,6 @@ def handle(userToken, _=None, deleteToken=True):
             )
 
         # Console output
-        logger.info("User disconnected", extra={"username": username, "reason": "logout"})
+        logger.info(
+            "User disconnected", extra={"username": username, "reason": "logout"},
+        )

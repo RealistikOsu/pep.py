@@ -18,7 +18,7 @@ def configure_logging() -> None:
     if not config_file.exists():
         raise FileNotFoundError(f"Logging configuration file not found: {config_file}")
 
-    with open(config_file, "r") as f:
+    with open(config_file) as f:
         config = yaml.safe_load(f)
 
     logging.config.dictConfig(config)
