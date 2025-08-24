@@ -100,7 +100,7 @@ def read_packet_data(
                     unpack_data(
                         stream[start + 2 + (4 * j) : start + 2 + (4 * (j + 1))],
                         types.SINT32,
-                    )
+                    ),
                 )
 
             # Update end

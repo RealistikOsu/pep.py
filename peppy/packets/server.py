@@ -1,7 +1,9 @@
 """Contains functions used to write specific server packets to byte streams"""
-
 from __future__ import annotations
 
+from . import builder
+from . import ids
+from . import types
 from .. import settings
 from ..common.constants import privileges
 from ..common.ripple import userUtils
@@ -11,8 +13,6 @@ from ..constants.rosuprivs import DEVELOPER
 from ..constants.rosuprivs import MODERATOR
 from ..constants.rosuprivs import OWNER
 from ..objects import glob
-
-from . import builder, types, ids
 
 """ Login errors packets """
 

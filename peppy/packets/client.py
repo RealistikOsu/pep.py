@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from . import reader
+from . import types
 from ..constants import slotStatuses
-
-from . import reader, types
 
 """ Users listing packets """
 

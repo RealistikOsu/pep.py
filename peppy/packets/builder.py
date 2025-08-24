@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import struct
 from functools import cache
-from typing import Callable, Type, TypeVar, Union
+from typing import Callable
+from typing import Type
+from typing import TypeVar
+from typing import Union
 
-from . import types, ids
+from . import ids
+from . import types
 
 T = TypeVar("T")
 __all__ = ("BinaryWriter", "write_simple")
