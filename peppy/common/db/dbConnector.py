@@ -31,7 +31,7 @@ class Worker:
         """
         self.connection = connection
         self.temporary = temporary
-        logger.debug("Created MySQL worker. Temporary: {self.temporary}")
+        logger.debug("Created MySQL worker", extra={"temporary": self.temporary})
 
     def __del__(self) -> None:
         """

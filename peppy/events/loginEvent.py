@@ -94,7 +94,7 @@ def handle(tornadoRequest):
 
         if not user_db:
             # Invalid username
-            logger.error("Login failed for user {username} (user not found)!")
+            logger.error("Login failed - user not found", extra={"username": username})
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: This user does not exist!",
             )
@@ -111,7 +111,7 @@ def handle(tornadoRequest):
 
         if not verify_password(userID, loginData[1]):
             # Invalid password
-            logger.error("Login failed for user {username} (invalid password)!")
+            logger.error("Login failed - invalid password", extra={"username": username})
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
@@ -119,7 +119,7 @@ def handle(tornadoRequest):
 
         # Make sure we are not banned or locked
         if (not priv & 3 > 0) and (not priv & privileges.USER_PENDING_VERIFICATION):
-            logger.error("Login failed for user {username} (user is banned)!")
+            logger.error("Login failed - user banned", extra={"username": username})
             raise exceptions.loginBannedException()
 
         # Verify this user (if pending activation)
@@ -131,11 +131,11 @@ def handle(tornadoRequest):
         ):
             if userUtils.verifyUser(userID, clientData):
                 # Valid account
-                logger.info("Account {userID} verified successfully!")
+                logger.info("Account verified successfully", extra={"user_id": userID})
                 firstLogin = True
             else:
                 # Multiaccount detected
-                logger.info("Account {userID} NOT verified!")
+                logger.info("Account NOT verified", extra={"user_id": userID})
                 raise exceptions.loginBannedException()
 
         # Check restricted mode (and eventually send message)
@@ -272,7 +272,7 @@ def handle(tornadoRequest):
         # Ainu Client 2020 update
         if not priv & privileges.USER_BOT:
             if tornadoRequest.request.headers.get("ainu"):
-                logger.info("Account {userID} tried to use Ainu Client 2020!")
+                logger.info("Account tried to use Ainu Client 2020", extra={"user_id": userID})
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -292,7 +292,7 @@ def handle(tornadoRequest):
                 "b20190401.22f56c084ba339eefd9c7ca4335e246f80",
                 "b20191223.3",
             ):
-                logger.info("Account {userID} tried to use Ainu Client!")
+                logger.info("Account tried to use Ainu Client", extra={"user_id": userID})
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
                 else:
@@ -307,7 +307,7 @@ def handle(tornadoRequest):
                     raise exceptions.loginCheatClientsException()
             # hqOsu
             elif osuVersion == "b20190226.2":
-                logger.info("Account {userID} tried to use hqOsu!")
+                logger.info("Account tried to use hqOsu", extra={"user_id": userID})
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Comedian."))
                 else:
@@ -323,7 +323,7 @@ def handle(tornadoRequest):
 
             # hqosu legacy
             elif osuVersion == "b20190716.5":
-                logger.info("Account {userID} tried to use hqOsu legacy!")
+                logger.info("Account tried to use hqOsu legacy", extra={"user_id": userID})
                 if user_restricted:
                     responseToken.enqueue(serverPackets.notification("Comedian."))
                 else:
@@ -464,7 +464,7 @@ def handle(tornadoRequest):
             notif += f"\n- Elapsed: {t_str}!"
         responseToken.enqueue(serverPackets.notification(notif))
 
-        logger.info("Authentication attempt took {t_str}!")
+        logger.info("Authentication attempt completed", extra={"duration": t_str})
 
         # Set reponse data to right value and reset our queue
         responseData = responseToken.fetch_queue()

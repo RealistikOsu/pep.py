@@ -39,7 +39,9 @@ class Stream:
         if client is not None:
             token = client.token
         if token not in self.clients:
-            logger.info("{token} has joined stream {self.name}")
+            logger.info(
+                "Token joined stream", extra={"token": token, "stream": self.name}
+            )
             self.clients.append(token)
             return True
 
@@ -62,7 +64,9 @@ class Stream:
         if client is not None:
             token = client.token
         if token in self.clients:
-            logger.info("{token} has left stream {self.name}")
+            logger.info(
+                "Token left stream", extra={"token": token, "stream": self.name}
+            )
             self.clients.remove(token)
 
     def broadcast(self, data: bytes, but: Optional[list[str]] = None) -> None:

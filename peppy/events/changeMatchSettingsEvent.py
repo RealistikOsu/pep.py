@@ -98,4 +98,4 @@ def handle(userToken, packetData):
         match.sendUpdates()
 
         # Console output
-        logger.info("MPROOM{match.matchID}: Updated room settings")
+        logger.info("Match room settings updated", extra={"match_id": match.matchID})

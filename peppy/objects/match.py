@@ -196,7 +196,7 @@ class Match:
         self.hostUserID = newHost
         token.enqueue(serverPackets.match_new_host_notify())
         self.sendUpdates()
-        logger.info("MPROOM{self.matchID}: {token.username} is now the host")
+        logger.info("User is now match host", extra={"match_id": self.matchID, "username": token.username})
         return True
 
     def removeHost(self) -> None:
@@ -206,7 +206,7 @@ class Match:
         """
         self.hostUserID = -1
         self.sendUpdates()
-        logger.info("MPROOM{self.matchID}: Removed host")
+        logger.info("Match host removed", extra={"match_id": self.matchID})
 
     # TODO: This is aids. rewrite.
     def setSlot(
@@ -346,7 +346,7 @@ class Match:
 
         # Set loaded to True
         self.slots[slotID].loaded = True
-        logger.info("MPROOM{self.matchID}: User {userID} loaded")
+        logger.info("User loaded in match", extra={"match_id": self.matchID, "user_id": userID})
 
         # Check all loaded
         total = 0
@@ -370,7 +370,7 @@ class Match:
             self.playingStreamName,
             serverPackets.match_all_players_loaded(),
         )
-        logger.info("MPROOM{self.matchID}: All players loaded! Match starting...")
+        logger.info("All players loaded - match starting", extra={"match_id": self.matchID})
 
     def playerSkip(self, userID: int) -> None:
         """
@@ -385,7 +385,7 @@ class Match:
 
         # Set skip to True
         self.slots[slotID].skip = True
-        logger.info("MPROOM{self.matchID}: User {userID} skipped")
+        logger.info("User skipped in match", extra={"match_id": self.matchID, "user_id": userID})
 
         # Send skip packet to every playing user
         # glob.streams.broadcast(self.playingStreamName, serverPackets.match_player_skipped(glob.tokens.tokens[self.slots[slotID].user].userID))
@@ -416,7 +416,7 @@ class Match:
             self.playingStreamName,
             serverPackets.match_all_skipped(),
         )
-        logger.info("MPROOM{self.matchID}: All players have skipped!")
+        logger.info("All players skipped in match", extra={"match_id": self.matchID})
 
     def updateScore(self, slotID: int, score: int) -> None:
         """
@@ -516,7 +516,7 @@ class Match:
         glob.streams.remove(self.playingStreamName)
 
         # Console output
-        logger.info("MPROOM{self.matchID}: Match completed")
+        logger.info("Match completed", extra={"match_id": self.matchID})
 
         # Set vinse id if needed
         chanName = f"#multi_{self.matchID}"
@@ -644,7 +644,7 @@ class Match:
         self.sendUpdates()
 
         # Console output
-        logger.info("MPROOM{self.matchID}: {user.username} left the room")
+        logger.info("User left match room", extra={"match_id": self.matchID, "username": user.username})
 
     def userChangeSlot(self, userID: int, newSlotID: int) -> bool:
         """
@@ -727,7 +727,7 @@ class Match:
         # Set new mods and send update
         self.mods = mods
         self.sendUpdates()
-        logger.info("MPROOM{self.matchID}: Mods changed to {self.mods}")
+        logger.info("Match mods changed", extra={"match_id": self.matchID, "mods": self.mods})
 
     def userHasBeatmap(self, userID: int, has: bool = True):
         """
@@ -789,7 +789,7 @@ class Match:
         )
 
         # Console output
-        logger.info("MPROOM{self.matchID}: {userID} has failed!")
+        logger.info("User failed in match", extra={"match_id": self.matchID, "user_id": userID})
 
     def invite(self, fro: int, to: int):
         """
@@ -909,10 +909,10 @@ class Match:
                 if firstTeam == -1:
                     firstTeam = self.slots[i].team
                 elif firstTeam != self.slots[i].team:
-                    logger.info("MPROOM{self.matchID}: Teams are valid")
+                    logger.info("Match teams are valid", extra={"match_id": self.matchID})
                     return True
 
-        logger.warning("MPROOM{self.matchID}: Invalid teams!")
+        logger.warning("Match teams are invalid", extra={"match_id": self.matchID})
         return False
 
     def start(self):
@@ -962,7 +962,7 @@ class Match:
 
     def abort(self):
         if not self.inProgress:
-            logger.warning("MPROOM{self.matchID}: Match is not in progress!")
+            logger.warning("Match is not in progress", extra={"match_id": self.matchID})
             return
         self.inProgress = False
         self.isStarting = False
@@ -971,7 +971,7 @@ class Match:
         glob.streams.broadcast(self.playingStreamName, serverPackets.match_abort())
         glob.streams.dispose(self.playingStreamName)
         glob.streams.remove(self.playingStreamName)
-        logger.info("MPROOM{self.matchID}: Match aborted")
+        logger.info("Match aborted", extra={"match_id": self.matchID})
 
     def initializeTeams(self):
         if (

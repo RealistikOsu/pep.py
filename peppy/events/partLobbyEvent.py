@@ -18,4 +18,4 @@ def handle(userToken, _):
     chat.partChannel(channel="#lobby", token=userToken, kick=True)
 
     # Console output
-    logger.info("{username} has left multiplayer lobby")
+    logger.info("User left multiplayer lobby", extra={"username": username})

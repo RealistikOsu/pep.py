@@ -48,7 +48,7 @@ def handle(userToken, _=None, deleteToken=True):
         # Change username if needed
         newUsername = glob.redis.get(f"ripple:change_username_pending:{userID}")
         if newUsername is not None:
-            logger.debug("Sending username change request for user {userID}")
+            logger.debug("Sending username change request", extra={"user_id": userID})
             glob.redis.publish(
                 "peppy:change_username",
                 json.dumps(
@@ -57,4 +57,4 @@ def handle(userToken, _=None, deleteToken=True):
             )
 
         # Console output
-        logger.info("{username} has been disconnected. (logout)")
+        logger.info("User disconnected", extra={"username": username, "reason": "logout"})

@@ -176,7 +176,7 @@ class TokenList:
                 ):
                     # That user has timed out, add to disconnected tokens
                     # We can't delete it while iterating or items() throws an error
-                    logger.debug("{value.username} timed out!!")
+                    logger.debug("User timed out", extra={"username": value.username})
                     value.enqueue(
                         serverPackets.notification(
                             "Your connection to the server timed out.",

@@ -17,7 +17,7 @@ def handle(userToken, packetData):
         return
 
     for i in packetData["users"]:
-        logger.debug("Sending stats for user {i}")
+        logger.debug("Sending stats for user", extra={"user_id": i})
 
         # Skip our stats
         if i == userToken.userID:

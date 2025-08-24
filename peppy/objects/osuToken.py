@@ -297,7 +297,7 @@ class UserToken:
                     )
 
             # Log
-            logger.info("{self.username} is spectating {host.username}")
+            logger.info("User is spectating", extra={"username": self.username, "host": host.username})
 
     def stopSpectating(self) -> None:
         """
@@ -468,7 +468,7 @@ class UserToken:
         :return:
         """
         # Send packet to target
-        logger.info("{self.username} has been disconnected. ({reason})")
+        logger.info("User disconnected", extra={"username": self.username, "reason": reason})
         if message != "":
             self.enqueue(serverPackets.notification(message))
         self.enqueue(serverPackets.login_failed())

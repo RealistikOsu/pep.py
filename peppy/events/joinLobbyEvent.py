@@ -19,4 +19,4 @@ def handle(userToken, _):
         userToken.enqueue(serverPackets.match_create(key))
 
     # Console output
-    logger.info("{username} has joined multiplayer lobby")
+    logger.info("User joined multiplayer lobby", extra={"username": username})

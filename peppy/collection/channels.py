@@ -58,7 +58,7 @@ class ChannelList:
             temp,
             hidden,
         )
-        logger.info("Created channel {name}")
+        logger.info("Created channel", extra={"name": name})
 
     def addTempChannel(self, name: str) -> Optional[Channel]:
         """
@@ -73,7 +73,7 @@ class ChannelList:
         glob.streams.add(f"chat/{name}")
         chan = Channel(name, "Chat", True, True, True, True)
         self.channels[name] = chan
-        logger.info("Created temp channel {name}")
+        logger.info("Created temp channel", extra={"name": name})
 
         return chan
 
@@ -90,7 +90,7 @@ class ChannelList:
         glob.streams.add(f"chat/{name}")
         chan = Channel(name, "Chat", True, True, False, True)
         self.channels[name] = chan
-        logger.info("Created hidden channel {name}")
+        logger.info("Created hidden channel", extra={"name": name})
 
         return chan
 
@@ -102,7 +102,7 @@ class ChannelList:
         :return:
         """
         if name not in self.channels:
-            logger.debug("{name} is not in channels list")
+            logger.debug("Channel not in list", extra={"name": name})
             return
         # glob.streams.broadcast("chat/{}".format(name), serverPackets.channel_kicked(name))
         stream = glob.streams.getStream(f"chat/{name}")
@@ -117,4 +117,4 @@ class ChannelList:
         glob.streams.dispose(f"chat/{name}")
         glob.streams.remove(f"chat/{name}")
         self.channels.pop(name)
-        logger.info("Removed channel {name}")
+        logger.info("Removed channel", extra={"name": name})

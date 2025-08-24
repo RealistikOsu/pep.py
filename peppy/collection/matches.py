@@ -94,7 +94,7 @@ class MatchList:
         # Send match dispose packet to everyone in lobby
         glob.streams.broadcast("lobby", serverPackets.match_dispose(matchID))
         del self.matches[matchID]
-        logger.info("MPROOM{matchID}: Room disposed manually")
+        logger.info("Match room disposed manually", extra={"match_id": matchID})
 
     def cleanupLoop(self) -> None:
         """
@@ -116,7 +116,7 @@ class MatchList:
                 if [x for x in m.slots if x.user is not None]:
                     continue
                 if t - m.createTime >= 120:
-                    logger.debug("Match #{m.matchID} marked for cleanup")
+                    logger.debug("Match marked for cleanup", extra={"match_id": m.matchID})
                     emptyMatches.append(m.matchID)
 
             # Dispose all empty matches

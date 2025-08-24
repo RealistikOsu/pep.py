@@ -18,5 +18,5 @@ def handle(userToken, packetData):
 
     for i in packetData["users"]:
         # Enqueue userpanel packets relative to this user
-        logger.debug("Sending panel for user {i}")
+        logger.debug("Sending panel for user", extra={"user_id": i})
         userToken.enqueue(serverPackets.user_presence(i))

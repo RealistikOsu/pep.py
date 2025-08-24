@@ -870,7 +870,7 @@ def updateStats(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        logger.warning("User {userID} doesn't exist.")
+        logger.warning("User doesn't exist", extra={"user_id": userID})
         return
 
     # Get gamemode for db
@@ -921,7 +921,7 @@ def updateStatsRx(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        logger.warning("User {userID} doesn't exist.")
+        logger.warning("User doesn't exist", extra={"user_id": userID})
         return
 
     # Get gamemode for db
@@ -972,7 +972,7 @@ def updateStatsAP(userID, score_):
 
     # Make sure the user exists
     if not exists(userID):
-        logger.warning("User {userID} doesn't exist.")
+        logger.warning("User doesn't exist", extra={"user_id": userID})
         return
 
     # Get gamemode for db
@@ -1814,7 +1814,7 @@ def logHardware(
     """
     # Make sure the strings are not empty
     if len(hashes) != 5 or not all(hashes[2:5]):
-        logger.warning("User {user_id} has sent an empty hwid hash set {hashes}.")
+        logger.warning("User sent empty hwid hash set", extra={"user_id": user_id, "hashes": hashes})
         return False
 
     if not is_restricted:
@@ -1987,7 +1987,7 @@ def verifyUser(userID, hashes):
 
         # If they are explicitly allowed to multiacc
         if user_data["bypass_hwid"]:
-            logger.warning("Allowed user {username} to bypass hwid check.")
+            logger.warning("User allowed to bypass hwid check", extra={"username": username})
             return True
 
         # Ban this user and append notes
