@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from constants import clientPackets
+import logging
+
 from constants import exceptions
-from constants import serverPackets
-from logger import log
 from objects import glob
+from packets import client
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -13,7 +16,7 @@ def handle(userToken, packetData):
         userID = userToken.userID
 
         # Read packet data
-        packetData = clientPackets.createMatch(packetData)
+        packetData = client.createMatch(packetData)
 
         # Make sure the name is valid
         matchName = packetData["matchName"].strip()
@@ -50,5 +53,5 @@ def handle(userToken, packetData):
             match.sendUpdates()
             match.changePassword(packetData["matchPassword"])
     except exceptions.matchCreateError:
-        log.error("Error while creating match!")
-        userToken.enqueue(serverPackets.match_join_fail())
+        logger.error("Error while creating match!")
+        userToken.enqueue(server.match_join_fail())

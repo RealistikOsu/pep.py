@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from constants import clientPackets
 from helpers import chatHelper as chat
+from packets import client
 
 
 def handle(userToken, packetData):
     # Send public message packet
-    packetData = clientPackets.sendPublicMessage(packetData)
+    packetData = client.sendPublicMessage(packetData)
     chat.sendMessage(
         token=userToken,
         to=packetData["to"],

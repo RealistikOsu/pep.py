@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import random
 import string
 from functools import partial
@@ -8,7 +9,8 @@ from time import localtime
 from time import strftime
 
 from common.constants import mods
-from logger import log
+
+logger = logging.getLogger(__name__)
 
 
 def randomString(length=8):

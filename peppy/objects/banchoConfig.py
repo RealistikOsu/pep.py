@@ -1,10 +1,13 @@
 # TODO: Rewrite this shit
 from __future__ import annotations
 
+import logging
+
 from common import generalUtils
-from constants import serverPackets
-from logger import log
 from objects import glob
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 class banchoConfig:
@@ -93,9 +96,9 @@ class banchoConfig:
         # Send new channels and new bottom icon to everyone
         glob.streams.broadcast(
             "main",
-            serverPackets.menu_icon(glob.banchoConf.config["menuIcon"]),
+            server.menu_icon(glob.banchoConf.config["menuIcon"]),
         )
-        glob.streams.broadcast("main", serverPackets.channel_info_end())
+        glob.streams.broadcast("main", server.channel_info_end())
         for key, value in glob.channels.channels.items():
             if value.publicRead and not value.hidden:
-                glob.streams.broadcast("main", serverPackets.channel_info(key))
+                glob.streams.broadcast("main", server.channel_info(key))

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 from common.constants import mods
-from constants import clientPackets
-from constants import serverPackets
-from logger import log
 from objects import glob
+from packets import client
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
@@ -13,8 +16,8 @@ def handle(userToken, packetData):
     username = userToken.username
 
     # Make sure we are not banned
-    # if userUtils.isBanned(userID):
-    #     userToken.enqueue(serverPackets.login_banned())
+    # if users.is_banned(userID):
+    #     userToken.enqueue(server.login_banned())
     #     return
 
     # Send restricted message if needed
@@ -22,7 +25,7 @@ def handle(userToken, packetData):
     #     userToken.checkRestricted(True)
 
     # Change action packet
-    packetData = clientPackets.userActionChange(packetData)
+    packetData = client.userActionChange(packetData)
 
     # If we are not in spectate status but we're spectating someone, stop spectating
     """
@@ -35,7 +38,7 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
         """
 
     # Update cached stats if our pp changed if we've just submitted a score or we've changed gameMode
-    # if (userToken.actionID == actions.PLAYING or userToken.actionID == actions.MULTIPLAYING) or (userToken.pp != userUtils.getPP(userID, userToken.gameMode)) or (userToken.gameMode != packetData["gameMode"]):
+    # if (userToken.actionID == actions.PLAYING or userToken.actionID == actions.MULTIPLAYING) or (userToken.pp != users.get_pp(userID, userToken.gameMode)) or (userToken.gameMode != packetData["gameMode"]):
 
     # Update cached stats if we've changed gamemode
     if userToken.gameMode != packetData["gameMode"]:
@@ -89,13 +92,13 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
         userToken.actionText = f"[{prefix}] " + packetData["actionText"]
 
     # Enqueue our new user panel and stats to us and our spectators
-    p = serverPackets.user_presence(userID) + serverPackets.user_stats(userID)
+    p = server.user_presence(userID) + server.user_stats(userID)
     userToken.enqueue(p)
     if userToken.spectators:
         for i in userToken.spectators:
             glob.tokens.tokens[i].enqueue(p)
 
     # Console output
-    log.info(
+    logger.info(
         f"{username} updated their presence! [Action ID: {userToken.actionID} // Action Text: {userToken.actionText}]",
     )

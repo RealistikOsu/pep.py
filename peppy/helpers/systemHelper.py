@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 import signal
@@ -8,10 +9,10 @@ import threading
 import time
 
 import psutil
-from constants import serverPackets
-from helpers import consoleHelper
-from logger import log
 from objects import glob
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 def dispose():
@@ -21,7 +22,7 @@ def dispose():
     :return:
     """
     print("> Disposing server... ")
-    log.info(f"Server closing! Bye!")
+    logger.info("Server closing! Bye!")
 
 
 def runningUnderUnix():
@@ -44,23 +45,23 @@ def scheduleShutdown(sendRestartTime, restart, message="", delay=20):
     :return:
     """
     # Console output
-    log.info(
+    logger.info(
         "Pep.py will {} in {} seconds!".format(
             "restart" if restart else "shutdown",
             sendRestartTime + delay,
         ),
     )
-    log.info(f"Sending server restart packets in {sendRestartTime} seconds...")
+    logger.info("Sending server restart packets", extra={"seconds": sendRestartTime})
 
     # Send notification if set
     if message != "":
-        glob.streams.broadcast("main", serverPackets.notification(message))
+        glob.streams.broadcast("main", server.notification(message))
 
     # Schedule server restart packet
     threading.Timer(
         sendRestartTime,
         glob.streams.broadcast,
-        ["main", serverPackets.server_restart(delay * 2 * 1000)],
+        ["main", server.server_restart(delay * 2 * 1000)],
     ).start()
     glob.restarting = True
 
@@ -80,7 +81,7 @@ def restartServer():
 
     :return:
     """
-    log.info("Restarting pep.py...")
+    logger.info("Restarting pep.py...")
     dispose()
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
@@ -91,7 +92,7 @@ def shutdownServer():
 
     :return:
     """
-    log.info("Shutting down pep.py...")
+    logger.info("Shutting down pep.py...")
     dispose()
     sig = signal.SIGKILL if runningUnderUnix() else signal.CTRL_C_EVENT
     os.kill(os.getpid(), sig)

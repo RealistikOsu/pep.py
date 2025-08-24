@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from constants import serverPackets
+from packets import server
 
 
 def handle(userToken, packetData):
     # Update cache and send new stats
     userToken.updateCachedStats()
-    userToken.enqueue(serverPackets.user_stats(userToken.userID))
+    userToken.enqueue(server.user_stats(userToken.userID))

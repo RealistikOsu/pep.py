@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from constants import clientPackets
 from objects import glob
+from packets import client
 
 
 def handle(userToken, packetData):
@@ -9,7 +9,7 @@ def handle(userToken, packetData):
     userID = userToken.userID
 
     # Get packet data
-    packetData = clientPackets.lockSlot(packetData)
+    packetData = client.lockSlot(packetData)
 
     # Make sure the match exists
     matchID = userToken.matchID

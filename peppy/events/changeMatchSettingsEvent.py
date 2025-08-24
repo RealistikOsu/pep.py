@@ -1,20 +1,22 @@
 from __future__ import annotations
 
+import logging
 import random
 
 from common import generalUtils
-from constants import clientPackets
 from constants import matchModModes
 from constants import matchTeams
 from constants import matchTeamTypes
 from constants import slotStatuses
-from logger import log
 from objects import glob
+from packets import client
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # Read new settings
-    packetData = clientPackets.changeMatchSettings(packetData)
+    packetData = client.changeMatchSettings(packetData)
 
     # Get match ID
     matchID = userToken.matchID
@@ -96,4 +98,4 @@ def handle(userToken, packetData):
         match.sendUpdates()
 
         # Console output
-        log.info(f"MPROOM{match.matchID}: Updated room settings")
+        logger.info("Match room settings updated", extra={"match_id": match.matchID})

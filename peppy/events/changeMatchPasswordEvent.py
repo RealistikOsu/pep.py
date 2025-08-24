@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from constants import clientPackets
 from objects import glob
+from packets import client
 
 
 def handle(userToken, packetData):
     # Read packet data. Same structure as changeMatchSettings
-    packetData = clientPackets.changeMatchSettings(packetData)
+    packetData = client.changeMatchSettings(packetData)
 
     # Make sure the match exists
     matchID = userToken.matchID

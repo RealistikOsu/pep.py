@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from helpers import chatHelper as chat
-from logger import log
 from objects import glob
 from objects.channel import Channel
+
+logger = logging.getLogger(__name__)
 
 
 class ChannelList:
@@ -56,7 +58,7 @@ class ChannelList:
             temp,
             hidden,
         )
-        log.info(f"Created channel {name}")
+        logger.info("Created channel", extra={"name": name})
 
     def addTempChannel(self, name: str) -> Optional[Channel]:
         """
@@ -71,7 +73,7 @@ class ChannelList:
         glob.streams.add(f"chat/{name}")
         chan = Channel(name, "Chat", True, True, True, True)
         self.channels[name] = chan
-        log.info(f"Created temp channel {name}")
+        logger.info("Created temp channel", extra={"name": name})
 
         return chan
 
@@ -88,7 +90,7 @@ class ChannelList:
         glob.streams.add(f"chat/{name}")
         chan = Channel(name, "Chat", True, True, False, True)
         self.channels[name] = chan
-        log.info(f"Created hidden channel {name}")
+        logger.info("Created hidden channel", extra={"name": name})
 
         return chan
 
@@ -100,9 +102,9 @@ class ChannelList:
         :return:
         """
         if name not in self.channels:
-            log.debug(f"{name} is not in channels list")
+            logger.debug("Channel not in list", extra={"name": name})
             return
-        # glob.streams.broadcast("chat/{}".format(name), serverPackets.channel_kicked(name))
+        # glob.streams.broadcast("chat/{}".format(name), server.channel_kicked(name))
         stream = glob.streams.getStream(f"chat/{name}")
         if stream is not None:
             for token in stream.clients:
@@ -115,4 +117,4 @@ class ChannelList:
         glob.streams.dispose(f"chat/{name}")
         glob.streams.remove(f"chat/{name}")
         self.channels.pop(name)
-        log.info(f"Removed channel {name}")
+        logger.info("Removed channel", extra={"name": name})

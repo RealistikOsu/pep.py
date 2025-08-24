@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import pprint
 import random
 import re
@@ -20,14 +21,13 @@ from common import generalUtils
 from common.constants import gameModes
 from common.constants import mods
 from common.constants import privileges
-from common.ripple import userUtils
-from common.ripple.userUtils import restrict_with_log
+from common.ripple import users
+from common.ripple.users import restrict_with_log
 from constants import exceptions
 from constants import matchModModes
 from constants import matchScoringTypes
 from constants import matchTeams
 from constants import matchTeamTypes
-from constants import serverPackets
 from constants import slotStatuses
 from discord_webhook import DiscordEmbed
 from discord_webhook import DiscordWebhook
@@ -36,9 +36,11 @@ from helpers import systemHelper
 from helpers import user_helper
 from helpers.status_helper import UserStatus
 from helpers.user_helper import username_safe
-from logger import log
 from objects import fokabot
 from objects import glob
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 REGEX = "^{}( (.+)?)?$"
 commands = {}
@@ -333,7 +335,7 @@ def instantRestart(fro, chan, message):
     """Reloads pep.py instantly."""
     glob.streams.broadcast(
         "main",
-        serverPackets.notification("We are restarting Bancho. Be right back!"),
+        server.notification("We are restarting Bancho. Be right back!"),
     )
     systemHelper.scheduleShutdown(0, True, delay=5)
     return False
@@ -361,7 +363,7 @@ def alert(fro, chan, message):
     msg = " ".join(message[:]).strip()
     if not msg:
         return False
-    glob.streams.broadcast("main", serverPackets.notification(msg))
+    glob.streams.broadcast("main", server.notification(msg))
     return False
 
 
@@ -379,7 +381,7 @@ def alertUser(fro, chan, message):
         msg = " ".join(message[1:]).strip()
         if not msg:
             return False
-        targetToken.enqueue(serverPackets.notification(msg))
+        targetToken.enqueue(server.notification(msg))
         return False
     else:
         return "User offline."
@@ -495,8 +497,8 @@ def silence(fro, chan, message):
         return "The amount must be a number."
 
     # Get target user ID
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
 
     # Make sure the user exists
     if not targetUserID:
@@ -525,7 +527,7 @@ def silence(fro, chan, message):
         targetToken.silence(silenceTime, reason, userID)
     else:
         # User offline, silence user only in db
-        userUtils.silence(targetUserID, silenceTime, reason, userID)
+        users.silence(targetUserID, silenceTime, reason, userID)
 
     # Log message
     msg = f"{target} has been silenced for: {reason}"
@@ -542,8 +544,8 @@ def removeSilence(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -554,7 +556,7 @@ def removeSilence(fro, chan, message):
         targetToken.silence(0, "", userID)
     else:
         # user offline, remove islene ofnlt from db
-        userUtils.silence(targetUserID, 0, "", userID)
+        users.silence(targetUserID, 0, "", userID)
 
     return f"{target}'s silence reset"
 
@@ -566,19 +568,19 @@ def ban(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
     # Set allowed to 0
-    userUtils.ban(targetUserID)
+    users.ban(targetUserID)
 
     # Send ban packet to the user if he's online
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
-        targetToken.enqueue(serverPackets.login_banned())
+        targetToken.enqueue(server.login_banned())
 
-    log.rap(userID, f"has banned {target}", True)
+    logger.info(f"RAP: userID has banned {target}", extra={"userID": userID})
     return f"RIP {target}. You will not be missed."
 
 
@@ -589,15 +591,15 @@ def unban(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
     # Set allowed to 1
-    userUtils.unban(targetUserID)
+    users.unban(targetUserID)
 
-    log.rap(userID, f"has unbanned {target}", True)
+    logger.info(f"RAP: userID has unbanned {target}", extra={"userID": userID})
     return f"Welcome back {target}!"
 
 
@@ -619,8 +621,8 @@ def restrict(fro, chan, message):
     summary, detail = matched[0]
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"Could not find the user '{target}' on the server."
 
@@ -650,8 +652,8 @@ def freeze(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -674,13 +676,13 @@ def freeze(fro, chan, message):
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
         targetToken.enqueue(
-            serverPackets.notification(
+            server.notification(
                 f"You have been frozen! The {settings.PS_NAME} staff team has found you "
                 f"suspicious and would like to request a liveplay. Visit {settings.PS_DOMAIN} for more info.",
             ),
         )
 
-    log.rap(userID, f"has frozen {target}", True)
+    logger.info(f"RAP: userID has frozen {target}", extra={"userID": userID})
     return "User has been frozen!"
 
 
@@ -694,8 +696,8 @@ def unfreeze(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
@@ -715,13 +717,13 @@ def unfreeze(fro, chan, message):
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
         targetToken.enqueue(
-            serverPackets.notification(
+            server.notification(
                 "Your account has been unfrozen! You have proven your legitemacy. "
                 f"Thank you and have fun playing on {settings.PS_NAME}!",
             ),
         )
 
-    log.rap(userID, f"has unfrozen {target}", True)
+    logger.info(f"RAP: userID has unfrozen {target}", extra={"userID": userID})
     return "User has been unfrozen!"
 
 
@@ -735,15 +737,18 @@ def unrestrict(fro, chan, message):
     target = username_safe(" ".join(message))
 
     # Make sure the user exists
-    targetUserID = userUtils.getIDSafe(target)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(target)
+    userID = users.get_id(fro)
     if not targetUserID:
         return f"{target}: user not found"
 
     # Set allowed to 1
-    userUtils.unrestrict(targetUserID)
+    users.unrestrict(targetUserID)
 
-    log.rap(userID, f"has removed restricted mode from {target}", True)
+    logger.info(
+        f"RAP: userID has removed restricted mode from {target}",
+        extra={"userID": userID},
+    )
     return f"Welcome back {target}!"
 
 
@@ -789,11 +794,11 @@ def systemMaintenance(fro, chan, message):
 
         glob.streams.broadcast(
             "main",
-            serverPackets.notification(
+            server.notification(
                 "Our realtime server is in maintenance mode. Please try to login again later.",
             ),
         )
-        glob.tokens.multipleEnqueue(serverPackets.login_error(), who)
+        glob.tokens.multipleEnqueue(server.login_error(), who)
         msg = "The server is now in maintenance mode!"
     else:
         # We have turned off maintenance mode
@@ -1103,7 +1108,7 @@ def report(fro, chan, message):
             raise exceptions.invalidUserException()
 
         # Make sure the user exists
-        targetID = userUtils.getID(target)
+        targetID = users.get_id(target)
         if targetID == 0:
             raise exceptions.userNotFoundException()
 
@@ -1121,7 +1126,7 @@ def report(fro, chan, message):
         glob.db.execute(
             "INSERT INTO reports (id, from_uid, to_uid, reason, chatlog, time) VALUES (NULL, %s, %s, %s, %s, %s)",
             [
-                userUtils.getID(fro),
+                users.get_id(fro),
                 targetID,
                 "{reason} - ingame {info}".format(
                     reason=reason,
@@ -1140,7 +1145,7 @@ def report(fro, chan, message):
 
         # Log report in #admin and on discord
         chat.sendMessage(glob.BOT_NAME, "#admin", adminMsg)
-        log.warning(adminMsg, discord="cm")
+        logger.warning(adminMsg, discord="cm")
     except exceptions.invalidUserException:
         msg = f"Hello, {glob.BOT_NAME} here! You can't report me. I won't forget what you've tried to do. Watch out."
     except exceptions.invalidArgumentsException:
@@ -1156,7 +1161,7 @@ def report(fro, chan, message):
                 if token.irc:
                     chat.sendMessage(glob.BOT_NAME, fro, msg)
                 else:
-                    token.enqueue(serverPackets.notification(msg))
+                    token.enqueue(server.notification(msg))
     return False
 
 
@@ -1337,7 +1342,7 @@ def multiplayer(fro, chan, message):
             )
         username = message[1]
         newSlotID = int(message[2])
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1356,7 +1361,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1380,7 +1385,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         token = glob.tokens.getTokenFromUserID(userID)
@@ -1391,7 +1396,7 @@ def multiplayer(fro, chan, message):
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
         _match.invite(settings.PS_BOT_USER_ID, userID)
         token.enqueue(
-            serverPackets.notification(
+            server.notification(
                 f"Please accept the invite you've just received from {glob.BOT_NAME} to "
                 "enter your tourney match.",
             ),
@@ -1482,7 +1487,7 @@ def multiplayer(fro, chan, message):
         username = message[1].strip()
         if not username:
             raise exceptions.invalidArgumentsException("Please provide a username")
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1556,7 +1561,7 @@ def multiplayer(fro, chan, message):
             raise exceptions.invalidArgumentsException(
                 "Team colour must be red or blue",
             )
-        userID = userUtils.getIDSafe(username)
+        userID = users.get_id_safe(username)
         if userID is None:
             raise exceptions.userNotFoundException("No such user")
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
@@ -1591,16 +1596,20 @@ def multiplayer(fro, chan, message):
                 readableStatus = readableStatuses[slot.status]
             empty = False
             msg += "* [{team}] <{status}> ~ {username}{mods}{nl}".format(
-                team="red"
-                if slot.team == matchTeams.RED
-                else "blue"
-                if slot.team == matchTeams.BLUE
-                else "!! no team !!",
+                team=(
+                    "red"
+                    if slot.team == matchTeams.RED
+                    else "blue"
+                    if slot.team == matchTeams.BLUE
+                    else "!! no team !!"
+                ),
                 status=readableStatus,
                 username=glob.tokens.tokens[slot.user].username,
-                mods=f" (+ {generalUtils.readableMods(slot.mods)})"
-                if slot.mods > 0
-                else "",
+                mods=(
+                    f" (+ {generalUtils.readableMods(slot.mods)})"
+                    if slot.mods > 0
+                    else ""
+                ),
                 nl=" | " if single else "\n",
             )
         if empty:
@@ -1673,8 +1682,8 @@ def switchServer(fro, chan, message):
     newServer = message[0].strip()
     if not newServer:
         return "Invalid server IP"
-    targetUserID = userUtils.getIDSafe(fro)
-    userID = userUtils.getID(fro)
+    targetUserID = users.get_id_safe(fro)
+    userID = users.get_id(fro)
 
     # Make sure the user exists
     if not targetUserID:
@@ -1682,7 +1691,7 @@ def switchServer(fro, chan, message):
 
     # Connect the user to the end server
     userToken = glob.tokens.getTokenFromUserID(userID)
-    userToken.enqueue(serverPackets.server_switch(newServer))
+    userToken.enqueue(server.server_switch(newServer))
 
     # Disconnect the user from the origin server
     # userToken.kick()
@@ -1804,7 +1813,7 @@ def crashuser(fro, chan, message):
     if targetToken == None:
         # bruh they dont exist
         return "bruh they literally dont exist"
-    targetToken.enqueue(serverPackets.crash())
+    targetToken.enqueue(server.crash())
     return ":^)"
 
 
@@ -1833,7 +1842,7 @@ def bless(fro: str, chan: str, message: str) -> str:
     # Use bytearray for speed
     q = bytearray()
     for b in bible_split:
-        q += serverPackets.message_notify("Jesus", t_user.username, b)
+        q += server.message_notify("Jesus", t_user.username, b)
     t_user.enqueue(q)
     return "THEY ARE BLESSED AND ASCENDED TO HeAVeN"
 
@@ -1874,12 +1883,12 @@ def troll(fro: str, chan: str, message: str) -> str:
 
     # Use bytearray for speed
     q = bytearray()
-    q += serverPackets.message_notify(
+    q += server.message_notify(
         "Trollface",
         t_user.username,
         "We do little bit of trolling :tf:",
     )
-    q += serverPackets.message_notify("Trollface", t_user.username, ASCII_TROLL)
+    q += server.message_notify("Trollface", t_user.username, ASCII_TROLL)
     t_user.enqueue(q)
     return "They have been trolled"
 

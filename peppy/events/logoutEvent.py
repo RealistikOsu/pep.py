@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 
-from constants import serverPackets
 from helpers import chatHelper as chat
-from logger import log
 from objects import glob
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, _=None, deleteToken=True):
@@ -34,7 +36,7 @@ def handle(userToken, _=None, deleteToken=True):
         userToken.leaveAllStreams()
 
         # Enqueue our disconnection to everyone else
-        glob.streams.broadcast("main", serverPackets.logout_notify(userID))
+        glob.streams.broadcast("main", server.logout_notify(userID))
 
         # Delete token
         if deleteToken:
@@ -46,7 +48,7 @@ def handle(userToken, _=None, deleteToken=True):
         # Change username if needed
         newUsername = glob.redis.get(f"ripple:change_username_pending:{userID}")
         if newUsername is not None:
-            log.debug(f"Sending username change request for user {userID}")
+            logger.debug("Sending username change request", extra={"user_id": userID})
             glob.redis.publish(
                 "peppy:change_username",
                 json.dumps(
@@ -55,4 +57,7 @@ def handle(userToken, _=None, deleteToken=True):
             )
 
         # Console output
-        log.info(f"{username} has been disconnected. (logout)")
+        logger.info(
+            "User disconnected",
+            extra={"username": username, "reason": "logout"},
+        )

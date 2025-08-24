@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from constants import exceptions
-from constants import serverPackets
-from logger import log
 from objects import glob
+from packets import server
+
+logger = logging.getLogger(__name__)
 
 
 def handle(userToken, _):
@@ -14,9 +17,9 @@ def handle(userToken, _):
 
         # Send the packet to host
         glob.tokens.tokens[userToken.spectating].enqueue(
-            serverPackets.spectator_song_missing(userToken.userID),
+            server.spectator_song_missing(userToken.userID),
         )
     except exceptions.tokenNotFoundException:
         # Stop spectating if token not found
-        log.warning("Spectator can't spectate: token not found")
+        logger.warning("Spectator can't spectate: token not found")
         userToken.stopSpectating()

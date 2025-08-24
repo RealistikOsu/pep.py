@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+import logging
+
+logger = logging.getLogger(__name__)
 """FokaBot related functions"""
 from __future__ import annotations
 
@@ -7,10 +12,9 @@ from importlib import reload
 
 import settings
 from common.constants import actions
-from common.ripple import userUtils
+from common.ripple import users
 from constants import fokabotCommands
-from constants import serverPackets
-from logger import log
+from packets import server
 from objects import glob
 
 
@@ -20,7 +24,7 @@ def connect():
 
     :return:
     """
-    glob.BOT_NAME = userUtils.getUsername(settings.PS_BOT_USER_ID)
+    glob.BOT_NAME = users.get_username(settings.PS_BOT_USER_ID)
     token = glob.tokens.addToken(settings.PS_BOT_USER_ID)
     token.actionID = actions.WATCHING
     token.actionText = f"over {settings.PS_NAME}!"
@@ -31,8 +35,8 @@ def connect():
     token.timeOffset = 0
     token.country = 2  # this is retared, fuck it im keeping it as europe, couldnt find the uk as its ordered stupidly
     token.location = (39.01955903386848, 125.75276158057767)  # Pyongyang red square
-    glob.streams.broadcast("main", serverPackets.user_presence(settings.PS_BOT_USER_ID))
-    glob.streams.broadcast("main", serverPackets.user_stats(settings.PS_BOT_USER_ID))
+    glob.streams.broadcast("main", server.user_presence(settings.PS_BOT_USER_ID))
+    glob.streams.broadcast("main", server.user_stats(settings.PS_BOT_USER_ID))
 
 
 def reload_commands():
@@ -98,7 +102,7 @@ def fokabotResponse(fro, chan, message):
         except Exception:
             # If exception happens, handle it well.
             tb = traceback.format_exc()
-            log.error(
+            logger.error(
                 f"There was an issue while running '{cmd.trigger}' command. \nTraceback: {tb}",
             )
             resp = [
