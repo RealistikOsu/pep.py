@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import logging
 
-from constants import clientPackets
-from constants import serverPackets
+from packets import client
+from packets import server
 
 logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # Read userIDs list
-    packetData = clientPackets.userPanelRequest(packetData)
+    packetData = client.userPanelRequest(packetData)
 
     # Process lists with length <= 32
     if len(packetData) > 256:
@@ -20,4 +20,4 @@ def handle(userToken, packetData):
     for i in packetData["users"]:
         # Enqueue userpanel packets relative to this user
         logger.debug("Sending panel for user", extra={"user_id": i})
-        userToken.enqueue(serverPackets.user_presence(i))
+        userToken.enqueue(server.user_presence(i))

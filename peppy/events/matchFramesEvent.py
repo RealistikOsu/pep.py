@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from common.generalUtils import calc_acc
-from constants import clientPackets
-from constants import serverPackets
 from objects import glob
+from packets import client
+from packets import server
 
 
 def handle(userToken, packetData):
@@ -22,7 +22,7 @@ def handle(userToken, packetData):
         return
 
     # Parse the data
-    data = clientPackets.match_frames(packetData)
+    data = client.match_frames(packetData)
 
     with glob.matches.matches[matchID] as match:
         # Change slot id in packetData
@@ -67,7 +67,7 @@ def handle(userToken, packetData):
         # Enqueue frames to who's playing
         glob.streams.broadcast(
             match.playingStreamName,
-            serverPackets.match_frames(
+            server.match_frames(
                 time=data["time"],
                 slot_id=slotID,
                 count_300=data["count300"],

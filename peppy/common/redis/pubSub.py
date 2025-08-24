@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import logging
 import threading
 
 from common.redis import generalPubSubHandler
-import logging
 
 logger = logging.getLogger(__name__)
 

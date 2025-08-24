@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 
-from constants import clientPackets
 from constants import exceptions
 from objects import glob
+from packets import client
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 def handle(userToken, packetData):
     try:
         # Start spectating packet
-        packetData = clientPackets.startSpectating(packetData)
+        packetData = client.startSpectating(packetData)
 
         # If the user id is less than 0, treat this as a stop spectating packet
         if packetData["userID"] < 0:

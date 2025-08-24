@@ -4,9 +4,9 @@ import json
 import logging
 import time
 
-from constants import serverPackets
 from helpers import chatHelper as chat
 from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def handle(userToken, _=None, deleteToken=True):
         userToken.leaveAllStreams()
 
         # Enqueue our disconnection to everyone else
-        glob.streams.broadcast("main", serverPackets.logout_notify(userID))
+        glob.streams.broadcast("main", server.logout_notify(userID))
 
         # Delete token
         if deleteToken:

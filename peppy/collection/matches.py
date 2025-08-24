@@ -4,10 +4,10 @@ import logging
 import threading
 import time
 
-from constants import serverPackets
 from constants.exceptions import periodicLoopException
 from objects import glob
 from objects.match import Match
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class MatchList:
         glob.channels.removeChannel(f"#multi_{matchID}")
 
         # Send matchDisposed packet before disposing streams
-        glob.streams.broadcast(_match.streamName, serverPackets.match_dispose(matchID))
+        glob.streams.broadcast(_match.streamName, server.match_dispose(matchID))
 
         # Dispose all streams
         glob.streams.dispose(_match.streamName)
@@ -92,7 +92,7 @@ class MatchList:
         glob.streams.remove(_match.playingStreamName)
 
         # Send match dispose packet to everyone in lobby
-        glob.streams.broadcast("lobby", serverPackets.match_dispose(matchID))
+        glob.streams.broadcast("lobby", server.match_dispose(matchID))
         del self.matches[matchID]
         logger.info("Match room disposed manually", extra={"match_id": matchID})
 

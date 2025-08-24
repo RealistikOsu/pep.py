@@ -3,14 +3,14 @@ from __future__ import annotations
 import logging
 
 from common.ripple import userUtils
-from constants import clientPackets
+from packets import client
 
 logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # Friend add packet
-    packetData = clientPackets.addRemoveFriend(packetData)
+    packetData = client.addRemoveFriend(packetData)
     userUtils.addFriend(userToken.userID, packetData["friendID"])
 
     # Console output

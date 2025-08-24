@@ -12,7 +12,6 @@ from common.constants import privileges
 from common.ripple import userUtils
 from common.ripple.userUtils import restrict_with_log
 from constants import exceptions
-from constants import serverPackets
 from helpers import chatHelper as chat
 from helpers import geo_helper
 from helpers.timing import Timer
@@ -20,27 +19,28 @@ from helpers.user_helper import get_country
 from helpers.user_helper import set_country
 from helpers.user_helper import verify_password
 from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
-UNFREEZE_NOTIF = serverPackets.notification(
+UNFREEZE_NOTIF = server.notification(
     "Thank you for providing a liveplay! You have proven your legitemacy and "
     f"have subsequently been unfrozen. Have fun playing {settings.PS_NAME}!",
 )
-FREEZE_RES_NOTIF = serverPackets.notification(
+FREEZE_RES_NOTIF = server.notification(
     "Your window for liveplay sumbission has expired! Your account has been "
     "restricted as per our cheating policy. Please contact staff for more "
     f"information on what can be done. This can be done via the {settings.PS_NAME} Discord server.",
 )
-FALLBACK_NOTIF = serverPackets.notification(
+FALLBACK_NOTIF = server.notification(
     f"Fallback clients are not supported by {settings.PS_NAME}. This is due to a combination of missing features "
     f"and server security. Please use a modern build of osu! to play {settings.PS_NAME}.",
 )
-OLD_CLIENT_NOTIF = serverPackets.notification(
+OLD_CLIENT_NOTIF = server.notification(
     f"You are using an outdated client (minimum release year {settings.PS_MINIMUM_CLIENT_YEAR}). "
     f"Please update your client to the latest version to play {settings.PS_NAME}.",
 )
-BOT_ACCOUNT_RESPONSE = serverPackets.notification(
+BOT_ACCOUNT_RESPONSE = server.notification(
     f"You may not log into a bot account using a real client. Please use a bot client to play {settings.PS_NAME}.",
 )
 
@@ -95,10 +95,10 @@ def handle(tornadoRequest):
         if not user_db:
             # Invalid username
             logger.error("Login failed - user not found", extra={"username": username})
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"{settings.PS_NAME}: This user does not exist!",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Get user ID and privileges
@@ -117,20 +117,20 @@ def handle(tornadoRequest):
                 responseData += UNFREEZE_NOTIF
             else:
                 # Still frozen
-                responseData += serverPackets.notification(
+                responseData += server.notification(
                     "Your account is frozen. Please contact staff for more information.",
                 )
-                responseData += serverPackets.login_failed()
+                responseData += server.login_failed()
                 return responseTokenString, bytes(responseData)
 
         # Check if user is banned
         if userPrivileges & privileges.USER_PUBLIC == 0:
-            responseData += serverPackets.login_banned()
+            responseData += server.login_banned()
             return responseTokenString, bytes(responseData)
 
         # Check if user is silenced
         if user_db["silence_end"] > time.time():
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"You are silenced until {datetime.fromtimestamp(user_db['silence_end']).strftime('%Y-%m-%d %H:%M:%S')} UTC.",
             )
 
@@ -141,51 +141,52 @@ def handle(tornadoRequest):
         # Verify password
         if not verify_password(str(loginData[1]), userID):
             logger.error(
-                "Login failed - invalid password", extra={"username": username},
+                "Login failed - invalid password",
+                extra={"username": username},
             )
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is restricted
         if userPrivileges & privileges.USER_PUBLIC == 0:
-            responseData += serverPackets.login_banned()
+            responseData += server.login_banned()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a bot account
         if userID == settings.PS_BOT_USER_ID:
             responseData += BOT_ACCOUNT_RESPONSE
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using an old client
         if int(osuVersion.split(".")[0]) < settings.PS_MINIMUM_CLIENT_YEAR:
             responseData += OLD_CLIENT_NOTIF
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a fallback client
         if "fallback" in osuVersion.lower():
             responseData += FALLBACK_NOTIF
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a cheat client
         if any(
             cheat in osuVersion.lower() for cheat in ["hack", "cheat", "mod", "multi"]
         ):
-            responseData += serverPackets.login_cheats()
+            responseData += server.login_cheats()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a VPN
         is_vpn = geo_helper.is_vpn(requestIP)
         if is_vpn and not user_db["bypass_hwid"]:
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 "VPN usage is not allowed on this server.",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Get country from IP
@@ -218,7 +219,7 @@ def handle(tornadoRequest):
 
         # Send to everyone our userpanel if we are not restricted or tournament
         if not responseToken.restricted:
-            glob.streams.broadcast("main", serverPackets.user_presence(userID))
+            glob.streams.broadcast("main", server.user_presence(userID))
 
         # TODO: Make quotes database based.
         t_str = t.end_time_str()
@@ -241,7 +242,7 @@ def handle(tornadoRequest):
         notif = f"""- Online Users: {online_users}\n- {quote}"""
         if responseToken.admin:
             notif += f"\n- Elapsed: {t_str}!"
-        responseToken.enqueue(serverPackets.notification(notif))
+        responseToken.enqueue(server.notification(notif))
 
         logger.info("Authentication attempt completed", extra={"duration": t_str})
 
@@ -250,41 +251,41 @@ def handle(tornadoRequest):
     except exceptions.loginFailedException:
         # Login failed error packet
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.invalidArgumentsException:
         # Invalid POST data
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.loginBannedException:
         # Login banned error packet
-        responseData += serverPackets.login_banned()
+        responseData += server.login_banned()
     except exceptions.loginCheatClientsException:
         # Banned for logging in with cheats
-        responseData += serverPackets.login_cheats()
+        responseData += server.login_cheats()
     except exceptions.banchoMaintenanceException:
         # Bancho is in maintenance mode
         responseData = b""
         if responseToken is not None:
             responseData = responseToken.fetch_queue()
-        responseData += serverPackets.notification(
+        responseData += server.notification(
             "Our bancho server is in maintenance mode. Please try to login again later.",
         )
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.banchoRestartingException:
         # Bancho is restarting
-        responseData += serverPackets.notification(
+        responseData += server.notification(
             "Bancho is restarting. Try again in a few minutes.",
         )
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.need2FAException:
         # User tried to log in from unknown IP
-        responseData += serverPackets.verification_required()
+        responseData += server.verification_required()
     except exceptions.haxException:
         # Using oldoldold client, we don't have client data. Force update.
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.force_update()
+        responseData += server.force_update()
     except exceptions.botAccountException:
-        return "no", BOT_ACCOUNT_RESPONSE + serverPackets.login_failed()
+        return "no", BOT_ACCOUNT_RESPONSE + server.login_failed()
     except Exception:
         logger.error(
             "Unknown error!\n```\n{}\n{}```".format(
@@ -292,8 +293,8 @@ def handle(tornadoRequest):
                 traceback.format_exc(),
             ),
         )
-        responseData += serverPackets.login_reply(-5)  # Bancho error
-        responseData += serverPackets.notification(
+        responseData += server.login_reply(-5)  # Bancho error
+        responseData += server.notification(
             f"{settings.PS_NAME}: The server has experienced an error while logging you "
             "in! Please notify the developers for help.",
         )
@@ -354,10 +355,10 @@ async def handle_fastapi(request):
         if not user_db:
             # Invalid username
             logger.error("Login failed - user not found", extra={"username": username})
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"{settings.PS_NAME}: This user does not exist!",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Get user ID and privileges
@@ -376,20 +377,20 @@ async def handle_fastapi(request):
                 responseData += UNFREEZE_NOTIF
             else:
                 # Still frozen
-                responseData += serverPackets.notification(
+                responseData += server.notification(
                     "Your account is frozen. Please contact staff for more information.",
                 )
-                responseData += serverPackets.login_failed()
+                responseData += server.login_failed()
                 return responseTokenString, bytes(responseData)
 
         # Check if user is banned
         if userPrivileges & privileges.USER_PUBLIC == 0:
-            responseData += serverPackets.login_banned()
+            responseData += server.login_banned()
             return responseTokenString, bytes(responseData)
 
         # Check if user is silenced
         if user_db["silence_end"] > time.time():
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"You are silenced until {datetime.fromtimestamp(user_db['silence_end']).strftime('%Y-%m-%d %H:%M:%S')} UTC.",
             )
 
@@ -400,51 +401,52 @@ async def handle_fastapi(request):
         # Verify password
         if not verify_password(str(loginData[1]), userID):
             logger.error(
-                "Login failed - invalid password", extra={"username": username},
+                "Login failed - invalid password",
+                extra={"username": username},
             )
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is restricted
         if userPrivileges & privileges.USER_PUBLIC == 0:
-            responseData += serverPackets.login_banned()
+            responseData += server.login_banned()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a bot account
         if userID == settings.PS_BOT_USER_ID:
             responseData += BOT_ACCOUNT_RESPONSE
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using an old client
         if int(osuVersion.split(".")[0]) < settings.PS_MINIMUM_CLIENT_YEAR:
             responseData += OLD_CLIENT_NOTIF
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a fallback client
         if "fallback" in osuVersion.lower():
             responseData += FALLBACK_NOTIF
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a cheat client
         if any(
             cheat in osuVersion.lower() for cheat in ["hack", "cheat", "mod", "multi"]
         ):
-            responseData += serverPackets.login_cheats()
+            responseData += server.login_cheats()
             return responseTokenString, bytes(responseData)
 
         # Check if user is using a VPN
         is_vpn = geo_helper.is_vpn(requestIP)
         if is_vpn and not user_db["bypass_hwid"]:
-            responseData += serverPackets.notification(
+            responseData += server.notification(
                 "VPN usage is not allowed on this server.",
             )
-            responseData += serverPackets.login_failed()
+            responseData += server.login_failed()
             return responseTokenString, bytes(responseData)
 
         # Get country from IP
@@ -477,7 +479,7 @@ async def handle_fastapi(request):
 
         # Send to everyone our userpanel if we are not restricted or tournament
         if not responseToken.restricted:
-            glob.streams.broadcast("main", serverPackets.user_presence(userID))
+            glob.streams.broadcast("main", server.user_presence(userID))
 
         # TODO: Make quotes database based.
         t_str = t.end_time_str()
@@ -500,7 +502,7 @@ async def handle_fastapi(request):
         notif = f"""- Online Users: {online_users}\n- {quote}"""
         if responseToken.admin:
             notif += f"\n- Elapsed: {t_str}!"
-        responseToken.enqueue(serverPackets.notification(notif))
+        responseToken.enqueue(server.notification(notif))
 
         logger.info("Authentication attempt completed", extra={"duration": t_str})
 
@@ -509,41 +511,41 @@ async def handle_fastapi(request):
     except exceptions.loginFailedException:
         # Login failed error packet
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.invalidArgumentsException:
         # Invalid POST data
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.loginBannedException:
         # Login banned error packet
-        responseData += serverPackets.login_banned()
+        responseData += server.login_banned()
     except exceptions.loginCheatClientsException:
         # Banned for logging in with cheats
-        responseData += serverPackets.login_cheats()
+        responseData += server.login_cheats()
     except exceptions.banchoMaintenanceException:
         # Bancho is in maintenance mode
         responseData = b""
         if responseToken is not None:
             responseData = responseToken.fetch_queue()
-        responseData += serverPackets.notification(
+        responseData += server.notification(
             "Our bancho server is in maintenance mode. Please try to login again later.",
         )
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.banchoRestartingException:
         # Bancho is restarting
-        responseData += serverPackets.notification(
+        responseData += server.notification(
             "Bancho is restarting. Try again in a few minutes.",
         )
-        responseData += serverPackets.login_failed()
+        responseData += server.login_failed()
     except exceptions.need2FAException:
         # User tried to log in from unknown IP
-        responseData += serverPackets.verification_required()
+        responseData += server.verification_required()
     except exceptions.haxException:
         # Using oldoldold client, we don't have client data. Force update.
         # (we don't use enqueue because we don't have a token since login has failed)
-        responseData += serverPackets.force_update()
+        responseData += server.force_update()
     except exceptions.botAccountException:
-        return "no", BOT_ACCOUNT_RESPONSE + serverPackets.login_failed()
+        return "no", BOT_ACCOUNT_RESPONSE + server.login_failed()
     except Exception:
         logger.error(
             "Unknown error!\n```\n{}\n{}```".format(
@@ -551,8 +553,8 @@ async def handle_fastapi(request):
                 traceback.format_exc(),
             ),
         )
-        responseData += serverPackets.login_reply(-5)  # Bancho error
-        responseData += serverPackets.notification(
+        responseData += server.login_reply(-5)  # Bancho error
+        responseData += server.notification(
             f"{settings.PS_NAME}: The server has experienced an error while logging you "
             "in! Please notify the developers for help.",
         )

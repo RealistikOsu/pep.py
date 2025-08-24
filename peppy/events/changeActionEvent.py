@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from common.constants import mods
-from constants import clientPackets
-from constants import serverPackets
-from objects import glob
 import logging
+
+from common.constants import mods
+from objects import glob
+from packets import client
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def handle(userToken, packetData):
 
     # Make sure we are not banned
     # if userUtils.isBanned(userID):
-    #     userToken.enqueue(serverPackets.login_banned())
+    #     userToken.enqueue(server.login_banned())
     #     return
 
     # Send restricted message if needed
@@ -24,7 +25,7 @@ def handle(userToken, packetData):
     #     userToken.checkRestricted(True)
 
     # Change action packet
-    packetData = clientPackets.userActionChange(packetData)
+    packetData = client.userActionChange(packetData)
 
     # If we are not in spectate status but we're spectating someone, stop spectating
     """
@@ -91,7 +92,7 @@ if userToken.matchID != -1 and userToken.actionID != actions.MULTIPLAYING and us
         userToken.actionText = f"[{prefix}] " + packetData["actionText"]
 
     # Enqueue our new user panel and stats to us and our spectators
-    p = serverPackets.user_presence(userID) + serverPackets.user_stats(userID)
+    p = server.user_presence(userID) + server.user_stats(userID)
     userToken.enqueue(p)
     if userToken.spectators:
         for i in userToken.spectators:

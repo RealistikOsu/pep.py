@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from typing import Optional
@@ -7,13 +8,12 @@ from typing import Optional
 import redis
 import settings
 from common.ripple import userUtils
-from constants import serverPackets
 from constants.exceptions import periodicLoopException
 from events import logoutEvent
 from helpers.user_helper import username_safe
 from objects import glob
 from objects.osuToken import UserToken
-import logging
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +178,7 @@ class TokenList:
                     # We can't delete it while iterating or items() throws an error
                     logger.debug("User timed out", extra={"username": value.username})
                     value.enqueue(
-                        serverPackets.notification(
+                        server.notification(
                             "Your connection to the server timed out.",
                         ),
                     )

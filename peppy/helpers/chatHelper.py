@@ -9,10 +9,10 @@ from typing import Union
 import settings
 from common.ripple import userUtils
 from constants import exceptions
-from constants import serverPackets
 from events import logoutEvent
 from objects import fokabot
 from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ def partChannel(
         # Force close tab if needed
         # NOTE: Maybe always needed, will check later
         if kick:
-            token.enqueue(serverPackets.channel_kicked(channelClient))
+            token.enqueue(server.channel_kicked(channelClient))
 
         # Console output
         logger.info(
@@ -287,7 +287,7 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
         message = message[:2045] + "..." if len(message) > 2048 else message
 
         # Build packet bytes
-        packet = serverPackets.message_notify(token.username, toClient, message)
+        packet = server.message_notify(token.username, toClient, message)
 
         # Send the message
         isChannel = to.startswith("#")
@@ -376,7 +376,7 @@ def sendMessage(fro="", to="", message="", token=None, toIRC=True):
             )
         return 0
     except exceptions.userSilencedException:
-        token.enqueue(serverPackets.silence_end_notify(token.getSilenceSecondsLeft()))
+        token.enqueue(server.silence_end_notify(token.getSilenceSecondsLeft()))
         logger.warning(
             "User tried to send a message during silence",
             extra={"username": token.username},

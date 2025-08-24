@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,7 +14,7 @@ import settings
 from common.constants import actions
 from common.ripple import userUtils
 from constants import fokabotCommands
-from constants import serverPackets
+from packets import server
 from objects import glob
 
 
@@ -33,8 +35,8 @@ def connect():
     token.timeOffset = 0
     token.country = 2  # this is retared, fuck it im keeping it as europe, couldnt find the uk as its ordered stupidly
     token.location = (39.01955903386848, 125.75276158057767)  # Pyongyang red square
-    glob.streams.broadcast("main", serverPackets.user_presence(settings.PS_BOT_USER_ID))
-    glob.streams.broadcast("main", serverPackets.user_stats(settings.PS_BOT_USER_ID))
+    glob.streams.broadcast("main", server.user_presence(settings.PS_BOT_USER_ID))
+    glob.streams.broadcast("main", server.user_stats(settings.PS_BOT_USER_ID))
 
 
 def reload_commands():

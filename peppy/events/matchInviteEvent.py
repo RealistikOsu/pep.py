@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from constants import clientPackets
 from objects import glob
+from packets import client
 
 
 def handle(userToken, packetData):
     # Read token and packet data
     userID = userToken.userID
-    packetData = clientPackets.matchInvite(packetData)
+    packetData = client.matchInvite(packetData)
 
     # Get match ID and match object
     matchID = userToken.matchID

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
+import logging
 import random
 
 from common import generalUtils
-from constants import clientPackets
 from constants import matchModModes
 from constants import matchTeams
 from constants import matchTeamTypes
 from constants import slotStatuses
 from objects import glob
-import logging
+from packets import client
 
 logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # Read new settings
-    packetData = clientPackets.changeMatchSettings(packetData)
+    packetData = client.changeMatchSettings(packetData)
 
     # Get match ID
     matchID = userToken.matchID

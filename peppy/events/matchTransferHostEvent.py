@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from constants import clientPackets
 from objects import glob
+from packets import client
 
 
 def handle(userToken, packetData):
     # Get packet data
-    packetData = clientPackets.transferHost(packetData)
+    packetData = client.transferHost(packetData)
 
     # Get match ID and match object
     matchID = userToken.matchID

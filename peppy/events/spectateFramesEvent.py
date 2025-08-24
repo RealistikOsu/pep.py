@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from constants import serverPackets
-from objects import glob
 import logging
+
+from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ def handle(userToken, packetData):
 
     # Send spectator frames to every spectator
     streamName = f"spect/{userID}"
-    glob.streams.broadcast(streamName, serverPackets.spectator_frames(packetData[7:]))
+    glob.streams.broadcast(streamName, server.spectator_frames(packetData[7:]))
     logger.debug(
         "Broadcasting {}'s frames to {} clients".format(
             userID,

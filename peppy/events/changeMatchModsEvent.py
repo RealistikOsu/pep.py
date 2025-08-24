@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from common.constants import mods
-from constants import clientPackets
 from constants import matchModModes
 from objects import glob
+from packets import client
 
 
 def handle(userToken, packetData):
@@ -11,7 +11,7 @@ def handle(userToken, packetData):
     userID = userToken.userID
 
     # Get packet data
-    packetData = clientPackets.changeMods(packetData)
+    packetData = client.changeMods(packetData)
 
     # Make sure the match exists
     matchID = userToken.matchID

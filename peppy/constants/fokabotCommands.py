@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import pprint
 import random
 import re
@@ -27,7 +28,6 @@ from constants import matchModModes
 from constants import matchScoringTypes
 from constants import matchTeams
 from constants import matchTeamTypes
-from constants import serverPackets
 from constants import slotStatuses
 from discord_webhook import DiscordEmbed
 from discord_webhook import DiscordWebhook
@@ -38,7 +38,7 @@ from helpers.status_helper import UserStatus
 from helpers.user_helper import username_safe
 from objects import fokabot
 from objects import glob
-import logging
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -335,7 +335,7 @@ def instantRestart(fro, chan, message):
     """Reloads pep.py instantly."""
     glob.streams.broadcast(
         "main",
-        serverPackets.notification("We are restarting Bancho. Be right back!"),
+        server.notification("We are restarting Bancho. Be right back!"),
     )
     systemHelper.scheduleShutdown(0, True, delay=5)
     return False
@@ -363,7 +363,7 @@ def alert(fro, chan, message):
     msg = " ".join(message[:]).strip()
     if not msg:
         return False
-    glob.streams.broadcast("main", serverPackets.notification(msg))
+    glob.streams.broadcast("main", server.notification(msg))
     return False
 
 
@@ -381,7 +381,7 @@ def alertUser(fro, chan, message):
         msg = " ".join(message[1:]).strip()
         if not msg:
             return False
-        targetToken.enqueue(serverPackets.notification(msg))
+        targetToken.enqueue(server.notification(msg))
         return False
     else:
         return "User offline."
@@ -578,9 +578,9 @@ def ban(fro, chan, message):
     # Send ban packet to the user if he's online
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
-        targetToken.enqueue(serverPackets.login_banned())
+        targetToken.enqueue(server.login_banned())
 
-    logger.info("RAP: userID, f"has banned {target}", True")
+    logger.info(f"RAP: userID has banned {target}", extra={"userID": userID})
     return f"RIP {target}. You will not be missed."
 
 
@@ -599,7 +599,7 @@ def unban(fro, chan, message):
     # Set allowed to 1
     userUtils.unban(targetUserID)
 
-    logger.info("RAP: userID, f"has unbanned {target}", True")
+    logger.info(f"RAP: userID has unbanned {target}", extra={"userID": userID})
     return f"Welcome back {target}!"
 
 
@@ -676,13 +676,13 @@ def freeze(fro, chan, message):
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
         targetToken.enqueue(
-            serverPackets.notification(
+            server.notification(
                 f"You have been frozen! The {settings.PS_NAME} staff team has found you "
                 f"suspicious and would like to request a liveplay. Visit {settings.PS_DOMAIN} for more info.",
             ),
         )
 
-    logger.info("RAP: userID, f"has frozen {target}", True")
+    logger.info(f"RAP: userID has frozen {target}", extra={"userID": userID})
     return "User has been frozen!"
 
 
@@ -717,13 +717,13 @@ def unfreeze(fro, chan, message):
     targetToken = glob.tokens.getTokenFromUsername(username_safe(target), safe=True)
     if targetToken is not None:
         targetToken.enqueue(
-            serverPackets.notification(
+            server.notification(
                 "Your account has been unfrozen! You have proven your legitemacy. "
                 f"Thank you and have fun playing on {settings.PS_NAME}!",
             ),
         )
 
-    logger.info("RAP: userID, f"has unfrozen {target}", True")
+    logger.info(f"RAP: userID has unfrozen {target}", extra={"userID": userID})
     return "User has been unfrozen!"
 
 
@@ -745,7 +745,10 @@ def unrestrict(fro, chan, message):
     # Set allowed to 1
     userUtils.unrestrict(targetUserID)
 
-    logger.info("RAP: userID, f"has removed restricted mode from {target}", True")
+    logger.info(
+        f"RAP: userID has removed restricted mode from {target}",
+        extra={"userID": userID},
+    )
     return f"Welcome back {target}!"
 
 
@@ -791,11 +794,11 @@ def systemMaintenance(fro, chan, message):
 
         glob.streams.broadcast(
             "main",
-            serverPackets.notification(
+            server.notification(
                 "Our realtime server is in maintenance mode. Please try to login again later.",
             ),
         )
-        glob.tokens.multipleEnqueue(serverPackets.login_error(), who)
+        glob.tokens.multipleEnqueue(server.login_error(), who)
         msg = "The server is now in maintenance mode!"
     else:
         # We have turned off maintenance mode
@@ -1158,7 +1161,7 @@ def report(fro, chan, message):
                 if token.irc:
                     chat.sendMessage(glob.BOT_NAME, fro, msg)
                 else:
-                    token.enqueue(serverPackets.notification(msg))
+                    token.enqueue(server.notification(msg))
     return False
 
 
@@ -1393,7 +1396,7 @@ def multiplayer(fro, chan, message):
         _match = glob.matches.matches[getMatchIDFromChannel(chan)]
         _match.invite(settings.PS_BOT_USER_ID, userID)
         token.enqueue(
-            serverPackets.notification(
+            server.notification(
                 f"Please accept the invite you've just received from {glob.BOT_NAME} to "
                 "enter your tourney match.",
             ),
@@ -1684,7 +1687,7 @@ def switchServer(fro, chan, message):
 
     # Connect the user to the end server
     userToken = glob.tokens.getTokenFromUserID(userID)
-    userToken.enqueue(serverPackets.server_switch(newServer))
+    userToken.enqueue(server.server_switch(newServer))
 
     # Disconnect the user from the origin server
     # userToken.kick()
@@ -1806,7 +1809,7 @@ def crashuser(fro, chan, message):
     if targetToken == None:
         # bruh they dont exist
         return "bruh they literally dont exist"
-    targetToken.enqueue(serverPackets.crash())
+    targetToken.enqueue(server.crash())
     return ":^)"
 
 
@@ -1835,7 +1838,7 @@ def bless(fro: str, chan: str, message: str) -> str:
     # Use bytearray for speed
     q = bytearray()
     for b in bible_split:
-        q += serverPackets.message_notify("Jesus", t_user.username, b)
+        q += server.message_notify("Jesus", t_user.username, b)
     t_user.enqueue(q)
     return "THEY ARE BLESSED AND ASCENDED TO HeAVeN"
 
@@ -1876,12 +1879,12 @@ def troll(fro: str, chan: str, message: str) -> str:
 
     # Use bytearray for speed
     q = bytearray()
-    q += serverPackets.message_notify(
+    q += server.message_notify(
         "Trollface",
         t_user.username,
         "We do little bit of trolling :tf:",
     )
-    q += serverPackets.message_notify("Trollface", t_user.username, ASCII_TROLL)
+    q += server.message_notify("Trollface", t_user.username, ASCII_TROLL)
     t_user.enqueue(q)
     return "They have been trolled"
 

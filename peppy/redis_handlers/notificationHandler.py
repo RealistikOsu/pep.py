@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from common.redis import generalPubSubHandler
-from constants import serverPackets
 from objects import glob
+from packets import server
 
 
 class handler(generalPubSubHandler.generalPubSubHandler):
@@ -16,4 +16,4 @@ class handler(generalPubSubHandler.generalPubSubHandler):
             return
         targetToken = glob.tokens.getTokenFromUserID(data["userID"])
         if targetToken is not None:
-            targetToken.enqueue(serverPackets.notification(data["message"]))
+            targetToken.enqueue(server.notification(data["message"]))

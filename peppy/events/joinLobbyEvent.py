@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from constants import serverPackets
-from objects import glob
 import logging
+
+from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def handle(userToken, _):
 
     # Send matches data
     for key, _ in glob.matches.matches.items():
-        userToken.enqueue(serverPackets.match_create(key))
+        userToken.enqueue(server.match_create(key))
 
     # Console output
     logger.info("User joined multiplayer lobby", extra={"username": username})

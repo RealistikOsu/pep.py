@@ -2,22 +2,22 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import threading
 import time
 from typing import Optional
 from typing import TYPE_CHECKING
 
 import settings
-from constants import dataTypes
 from constants import matchModModes
 from constants import matchScoringTypes
 from constants import matchTeams
 from constants import matchTeamTypes
-from constants import serverPackets
 from constants import slotStatuses
 from helpers import chatHelper as chat
 from objects import glob
-import logging
+from packets import server
+from packets import types
 
 logger = logging.getLogger(__name__)
 
@@ -114,8 +114,7 @@ class Match:
 
     def getMatchData(self, censored=False) -> bytes:
         """
-        Return binary match data structure for packetHelper
-        Return binary match data structure for packetHelper
+        Return binary match data structure for packet builder
 
         :return:
         """
@@ -123,32 +122,32 @@ class Match:
         # TODO: Test without safe copy, the error might have been caused by outdated python bytecode cache
         # safeMatch = copy.deepcopy(self)
         struct = [
-            [self.matchID, dataTypes.UINT16],
-            [int(self.inProgress), dataTypes.BYTE],
-            [0, dataTypes.BYTE],
-            [self.mods, dataTypes.UINT32],
-            [self.matchName, dataTypes.STRING],
+            [self.matchID, types.UINT16],
+            [int(self.inProgress), types.BYTE],
+            [0, types.BYTE],
+            [self.mods, types.UINT32],
+            [self.matchName, types.STRING],
         ]
         if censored and self.matchPassword:
-            struct.append(["RealistikDash was here.", dataTypes.STRING])
+            struct.append(["RealistikDash was here.", types.STRING])
         else:
-            struct.append([self.matchPassword, dataTypes.STRING])
+            struct.append([self.matchPassword, types.STRING])
 
         struct.extend(
             [
-                [self.beatmapName, dataTypes.STRING],
-                [self.beatmapID, dataTypes.UINT32],
-                [self.beatmapMD5, dataTypes.STRING],
+                [self.beatmapName, types.STRING],
+                [self.beatmapID, types.UINT32],
+                [self.beatmapMD5, types.STRING],
             ],
         )
 
         # Slots status IDs, always 16 elements
         for i in range(0, 16):
-            struct.append([self.slots[i].status, dataTypes.BYTE])
+            struct.append([self.slots[i].status, types.BYTE])
 
         # Slot teams, always 16 elements
         for i in range(0, 16):
-            struct.append([self.slots[i].team, dataTypes.BYTE])
+            struct.append([self.slots[i].team, types.BYTE])
 
         # Slot user ID. Write only if slot is occupied
         for i in range(0, 16):
@@ -157,28 +156,28 @@ class Match:
                 and self.slots[i].user in glob.tokens.tokens
             ):
                 struct.append(
-                    [glob.tokens.tokens[self.slots[i].user].userID, dataTypes.UINT32],
+                    [glob.tokens.tokens[self.slots[i].user].userID, types.UINT32],
                 )
 
         # Other match data
         struct.extend(
             [
-                [self.hostUserID, dataTypes.SINT32],
-                [self.gameMode, dataTypes.BYTE],
-                [self.matchScoringType, dataTypes.BYTE],
-                [self.matchTeamType, dataTypes.BYTE],
-                [self.matchModMode, dataTypes.BYTE],
+                [self.hostUserID, types.SINT32],
+                [self.gameMode, types.BYTE],
+                [self.matchScoringType, types.BYTE],
+                [self.matchTeamType, types.BYTE],
+                [self.matchModMode, types.BYTE],
             ],
         )
 
         # Slot mods if free mod is enabled
         if self.matchModMode == matchModModes.FREE_MOD:
             for i in range(0, 16):
-                struct.append([self.slots[i].mods, dataTypes.UINT32])
+                struct.append([self.slots[i].mods, types.UINT32])
 
         # Seed idk
         # TODO: Implement this, it should be used for mania "random" mod
-        struct.append([self.seed, dataTypes.UINT32])
+        struct.append([self.seed, types.UINT32])
 
         return struct
 
@@ -194,7 +193,7 @@ class Match:
             return False
         token = glob.tokens.tokens[self.slots[slotID].user]
         self.hostUserID = newHost
-        token.enqueue(serverPackets.match_new_host_notify())
+        token.enqueue(server.match_new_host_notify())
         self.sendUpdates()
         logger.info(
             "User is now match host",
@@ -320,7 +319,7 @@ class Match:
             and self.slots[slotID].user in glob.tokens.tokens
         ):
             glob.tokens.tokens[self.slots[slotID].user].enqueue(
-                serverPackets.match_update(self.matchID),
+                server.match_update(self.matchID),
             )
 
         # Set new slot status
@@ -374,7 +373,7 @@ class Match:
         """
         glob.streams.broadcast(
             self.playingStreamName,
-            serverPackets.match_all_players_loaded(),
+            server.match_all_players_loaded(),
         )
         logger.info(
             "All players loaded - match starting",
@@ -400,10 +399,10 @@ class Match:
         )
 
         # Send skip packet to every playing user
-        # glob.streams.broadcast(self.playingStreamName, serverPackets.match_player_skipped(glob.tokens.tokens[self.slots[slotID].user].userID))
+        # glob.streams.broadcast(self.playingStreamName, server.match_player_skipped(glob.tokens.tokens[self.slots[slotID].user].userID))
         glob.streams.broadcast(
             self.playingStreamName,
-            serverPackets.match_player_skipped(slotID),
+            server.match_player_skipped(slotID),
         )
 
         # Check all skipped
@@ -426,7 +425,7 @@ class Match:
         """
         glob.streams.broadcast(
             self.playingStreamName,
-            serverPackets.match_all_skipped(),
+            server.match_all_skipped(),
         )
         logger.info("All players skipped in match", extra={"match_id": self.matchID})
 
@@ -521,7 +520,7 @@ class Match:
         self.sendUpdates()
 
         # Send match complete
-        glob.streams.broadcast(self.streamName, serverPackets.match_complete())
+        glob.streams.broadcast(self.streamName, server.match_complete())
 
         # Destroy playing stream
         glob.streams.dispose(self.playingStreamName)
@@ -721,7 +720,7 @@ class Match:
         # Send password change to every user in match
         glob.streams.broadcast(
             self.streamName,
-            serverPackets.match_change_password(self.matchPassword),
+            server.match_change_password(self.matchPassword),
         )
 
         # Send new match settings too
@@ -803,7 +802,7 @@ class Match:
         # Send packet to everyone
         glob.streams.broadcast(
             self.playingStreamName,
-            serverPackets.match_player_fail(slotID),
+            server.match_player_fail(slotID),
         )
 
         # Console output
@@ -893,8 +892,8 @@ class Match:
 
         :return:
         """
-        self.matchDataCache = serverPackets.match_update(self.matchID)
-        censoredDataCache = serverPackets.match_update(self.matchID, censored=True)
+        self.matchDataCache = server.match_update(self.matchID)
+        censoredDataCache = server.match_update(self.matchID, censored=True)
         if self.matchDataCache is not None:
             glob.streams.broadcast(self.streamName, self.matchDataCache)
         if censoredDataCache is not None:
@@ -969,7 +968,7 @@ class Match:
         # Send match start packet
         glob.streams.broadcast(
             self.playingStreamName,
-            serverPackets.match_start(self.matchID),
+            server.match_start(self.matchID),
         )
 
         # Send updates
@@ -992,7 +991,7 @@ class Match:
         self.isStarting = False
         self.resetSlots()
         self.sendUpdates()
-        glob.streams.broadcast(self.playingStreamName, serverPackets.match_abort())
+        glob.streams.broadcast(self.playingStreamName, server.match_abort())
         glob.streams.dispose(self.playingStreamName)
         glob.streams.remove(self.playingStreamName)
         logger.info("Match aborted", extra={"match_id": self.matchID})

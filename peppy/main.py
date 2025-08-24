@@ -3,13 +3,14 @@ from __future__ import annotations
 import logging
 import os
 import sys
-import traceback
 from multiprocessing.pool import ThreadPool
+from pathlib import Path
 
 import ddtrace
 import redis.exceptions
 import settings
 import uvicorn
+import yaml
 from common.db import dbConnector
 from common.redis import pubSub
 from fastapi import FastAPI
@@ -30,6 +31,7 @@ from redis_handlers import updateSilenceHandler
 from redis_handlers import updateStatsHandler
 from routers import create_router
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -46,6 +48,19 @@ def create_app() -> FastAPI:
     )
 
     return app
+
+
+def configure_logging() -> None:
+    """Configure logging from logging.yaml file."""
+    config_file = Path("logging.yaml")
+
+    if not config_file.exists():
+        raise FileNotFoundError(f"Logging configuration file not found: {config_file}")
+
+    with open(config_file) as f:
+        config = yaml.safe_load(f)
+
+    logging.config.dictConfig(config)
 
 
 def configure_folders() -> None:

@@ -6,11 +6,7 @@ import traceback
 from typing import Optional
 
 import settings
-from fastapi import APIRouter, Request
-from fastapi.responses import Response as FastAPIResponse
 from constants import exceptions
-from constants import packetIDs
-from constants import serverPackets
 from events import beatmapInfoRequest
 from events import cantSpectateEvent
 from events import changeActionEvent
@@ -54,67 +50,72 @@ from events import tournamentLeaveMatchChannelEvent
 from events import tournamentMatchInfoRequestEvent
 from events import userPanelRequestEvent
 from events import userStatsRequestEvent
-from helpers import packetHelper
+from fastapi import APIRouter
+from fastapi import Request
+from fastapi.responses import Response as FastAPIResponse
 from objects import glob
+from packets import ids
+from packets import reader
+from packets import server
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 packetsRestricted = [
-    packetIDs.client_logout,
-    packetIDs.client_userStatsRequest,
-    packetIDs.client_requestStatusUpdate,
-    packetIDs.client_userPanelRequest,
-    packetIDs.client_changeAction,
-    packetIDs.client_channelJoin,
-    packetIDs.client_channelPart,
+    ids.client_logout,
+    ids.client_userStatsRequest,
+    ids.client_requestStatusUpdate,
+    ids.client_userPanelRequest,
+    ids.client_changeAction,
+    ids.client_channelJoin,
+    ids.client_channelPart,
 ]
 
 eventHandler = {
-    packetIDs.client_changeAction: changeActionEvent,
-    packetIDs.client_logout: logoutEvent,
-    packetIDs.client_friendAdd: friendAddEvent,
-    packetIDs.client_friendRemove: friendRemoveEvent,
-    packetIDs.client_userStatsRequest: userStatsRequestEvent,
-    packetIDs.client_requestStatusUpdate: requestStatusUpdateEvent,
-    packetIDs.client_userPanelRequest: userPanelRequestEvent,
-    packetIDs.client_channelJoin: channelJoinEvent,
-    packetIDs.client_channelPart: channelPartEvent,
-    packetIDs.client_sendPublicMessage: sendPublicMessageEvent,
-    packetIDs.client_sendPrivateMessage: sendPrivateMessageEvent,
-    packetIDs.client_setAwayMessage: setAwayMessageEvent,
-    packetIDs.client_startSpectating: startSpectatingEvent,
-    packetIDs.client_stopSpectating: stopSpectatingEvent,
-    packetIDs.client_cantSpectate: cantSpectateEvent,
-    packetIDs.client_spectateFrames: spectateFramesEvent,
-    packetIDs.client_joinLobby: joinLobbyEvent,
-    packetIDs.client_partLobby: partLobbyEvent,
-    packetIDs.client_createMatch: createMatchEvent,
-    packetIDs.client_joinMatch: joinMatchEvent,
-    packetIDs.client_partMatch: partMatchEvent,
-    packetIDs.client_matchChangeSlot: changeSlotEvent,
-    packetIDs.client_matchChangeSettings: changeMatchSettingsEvent,
-    packetIDs.client_matchChangePassword: changeMatchPasswordEvent,
-    packetIDs.client_matchChangeMods: changeMatchModsEvent,
-    packetIDs.client_matchReady: matchReadyEvent,
-    packetIDs.client_matchNotReady: matchReadyEvent,
-    packetIDs.client_matchLock: matchLockEvent,
-    packetIDs.client_matchStart: matchStartEvent,
-    packetIDs.client_matchLoadComplete: matchPlayerLoadEvent,
-    packetIDs.client_matchSkipRequest: matchSkipEvent,
-    packetIDs.client_matchScoreUpdate: matchFramesEvent,
-    packetIDs.client_matchComplete: matchCompleteEvent,
-    packetIDs.client_matchNoBeatmap: matchNoBeatmapEvent,
-    packetIDs.client_matchHasBeatmap: matchHasBeatmapEvent,
-    packetIDs.client_matchTransferHost: matchTransferHostEvent,
-    packetIDs.client_matchFailed: matchFailedEvent,
-    packetIDs.client_matchChangeTeam: matchChangeTeamEvent,
-    packetIDs.client_invite: matchInviteEvent,
-    packetIDs.client_tournamentMatchInfoRequest: tournamentMatchInfoRequestEvent,
-    packetIDs.client_tournamentJoinMatchChannel: tournamentJoinMatchChannelEvent,
-    packetIDs.client_tournamentLeaveMatchChannel: tournamentLeaveMatchChannelEvent,
-    packetIDs.client_beatmapInfoRequest: beatmapInfoRequest,
+    ids.client_changeAction: changeActionEvent,
+    ids.client_logout: logoutEvent,
+    ids.client_friendAdd: friendAddEvent,
+    ids.client_friendRemove: friendRemoveEvent,
+    ids.client_userStatsRequest: userStatsRequestEvent,
+    ids.client_requestStatusUpdate: requestStatusUpdateEvent,
+    ids.client_userPanelRequest: userPanelRequestEvent,
+    ids.client_channelJoin: channelJoinEvent,
+    ids.client_channelPart: channelPartEvent,
+    ids.client_sendPublicMessage: sendPublicMessageEvent,
+    ids.client_sendPrivateMessage: sendPrivateMessageEvent,
+    ids.client_setAwayMessage: setAwayMessageEvent,
+    ids.client_startSpectating: startSpectatingEvent,
+    ids.client_stopSpectating: stopSpectatingEvent,
+    ids.client_cantSpectate: cantSpectateEvent,
+    ids.client_spectateFrames: spectateFramesEvent,
+    ids.client_joinLobby: joinLobbyEvent,
+    ids.client_partLobby: partLobbyEvent,
+    ids.client_createMatch: createMatchEvent,
+    ids.client_joinMatch: joinMatchEvent,
+    ids.client_partMatch: partMatchEvent,
+    ids.client_matchChangeSlot: changeSlotEvent,
+    ids.client_matchChangeSettings: changeMatchSettingsEvent,
+    ids.client_matchChangePassword: changeMatchPasswordEvent,
+    ids.client_matchChangeMods: changeMatchModsEvent,
+    ids.client_matchReady: matchReadyEvent,
+    ids.client_matchNotReady: matchReadyEvent,
+    ids.client_matchLock: matchLockEvent,
+    ids.client_matchStart: matchStartEvent,
+    ids.client_matchLoadComplete: matchPlayerLoadEvent,
+    ids.client_matchSkipRequest: matchSkipEvent,
+    ids.client_matchScoreUpdate: matchFramesEvent,
+    ids.client_matchComplete: matchCompleteEvent,
+    ids.client_matchNoBeatmap: matchNoBeatmapEvent,
+    ids.client_matchHasBeatmap: matchHasBeatmapEvent,
+    ids.client_matchTransferHost: matchTransferHostEvent,
+    ids.client_matchFailed: matchFailedEvent,
+    ids.client_matchChangeTeam: matchChangeTeamEvent,
+    ids.client_invite: matchInviteEvent,
+    ids.client_tournamentMatchInfoRequest: tournamentMatchInfoRequestEvent,
+    ids.client_tournamentJoinMatchChannel: tournamentJoinMatchChannelEvent,
+    ids.client_tournamentLeaveMatchChannel: tournamentLeaveMatchChannelEvent,
+    ids.client_beatmapInfoRequest: beatmapInfoRequest,
 }
 
 
@@ -154,11 +155,11 @@ async def main_handler(request: Request) -> Response:
             while pos < len(request_data):
                 left_data = request_data[pos:]
 
-                packet_id = packetHelper.readPacketID(left_data)
-                data_length = packetHelper.readPacketLength(left_data)
+                packet_id = reader.read_packet_id(left_data)
+                data_length = reader.read_packet_length(left_data)
                 packet_data = request_data[pos : (pos + data_length + 7)]
 
-                if packet_id != 4:
+                if packet_id != ids.client_requestStatusUpdate:
                     if packet_id in eventHandler:
                         if not user_token.restricted or (
                             user_token.restricted and packet_id in packetsRestricted
@@ -186,8 +187,8 @@ async def main_handler(request: Request) -> Response:
             response_token_string = user_token.token
             response_data = user_token.fetch_queue()
         except exceptions.tokenNotFoundException:
-            response_data = serverPackets.server_restart(1)
-            response_data += serverPackets.notification(
+            response_data = server.server_restart(1)
+            response_data += server.notification(
                 f"You don't seem to be logged into {settings.PS_NAME} anymore... "
                 "This is common during server restarts, trying to log you back in.",
             )

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from common.ripple import userUtils
-from constants import clientPackets
 import logging
+
+from common.ripple import userUtils
+from packets import client
 
 logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # Friend remove packet
-    packetData = clientPackets.addRemoveFriend(packetData)
+    packetData = client.addRemoveFriend(packetData)
     userUtils.removeFriend(userToken.userID, packetData["friendID"])
 
     # Console output

@@ -9,8 +9,8 @@ import threading
 import time
 
 import psutil
-from constants import serverPackets
 from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +55,13 @@ def scheduleShutdown(sendRestartTime, restart, message="", delay=20):
 
     # Send notification if set
     if message != "":
-        glob.streams.broadcast("main", serverPackets.notification(message))
+        glob.streams.broadcast("main", server.notification(message))
 
     # Schedule server restart packet
     threading.Timer(
         sendRestartTime,
         glob.streams.broadcast,
-        ["main", serverPackets.server_restart(delay * 2 * 1000)],
+        ["main", server.server_restart(delay * 2 * 1000)],
     ).start()
     glob.restarting = True
 

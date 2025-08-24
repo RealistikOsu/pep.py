@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import logging
 
-from constants import clientPackets
 from constants import exceptions
-from constants import serverPackets
 from objects import glob
+from packets import client
+from packets import server
 
 logger = logging.getLogger(__name__)
 
 
 def handle(userToken, packetData):
     # read packet data
-    packetData = clientPackets.joinMatch(packetData)
+    packetData = client.joinMatch(packetData)
     matchID = packetData["matchID"]
     password = packetData["password"]
 
@@ -34,7 +34,7 @@ def handle(userToken, packetData):
             # Password is correct, join match
             userToken.joinMatch(matchID)
     except exceptions.matchWrongPasswordException:
-        userToken.enqueue(serverPackets.match_join_fail())
+        userToken.enqueue(server.match_join_fail())
         logger.warning(
             "{} has tried to join a mp room, but he typed the wrong password".format(
                 userToken.username,

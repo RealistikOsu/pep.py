@@ -13,11 +13,11 @@ from common.constants import gameModes
 from common.constants import privileges
 from common.ripple import userUtils
 from constants import exceptions
-from constants import serverPackets
 from constants.rosuprivs import ADMIN_PRIVS
 from events import logoutEvent
 from helpers import chatHelper as chat
 from objects import glob
+from packets import server
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +203,7 @@ class UserToken:
             raise exceptions.channelNoPermissionsException()
         self.joinedChannels.append(channelObject.name)
         self.joinStream(f"chat/{channelObject.name}")
-        self.enqueue(serverPackets.channel_join_success(channelObject.clientName))
+        self.enqueue(server.channel_join_success(channelObject.clientName))
 
     def partChannel(self, channelObject: Channel):
         """
@@ -264,7 +264,7 @@ class UserToken:
             host.joinStream(streamName)
 
             # Send spectator join packet to host
-            host.enqueue(serverPackets.spectator_add(self.userID))
+            host.enqueue(server.spectator_add(self.userID))
 
             # Create and join #spectator (#spect_userid) channel
             glob.channels.addTempChannel(f"#spect_{host.userID}")
@@ -284,14 +284,14 @@ class UserToken:
             # Send fellow spectator join to all clients
             glob.streams.broadcast(
                 streamName,
-                serverPackets.spectator_comrade_joined(self.userID),
+                server.spectator_comrade_joined(self.userID),
             )
 
             # Get current spectators list
             for i in host.spectators:
                 if i != self.token and i in glob.tokens.tokens:
                     self.enqueue(
-                        serverPackets.spectator_comrade_joined(
+                        server.spectator_comrade_joined(
                             glob.tokens.tokens[i].userID,
                         ),
                     )
@@ -325,13 +325,13 @@ class UserToken:
             self.leaveStream(streamName)
             if hostToken is not None:
                 hostToken.spectators.remove(self.token)
-                hostToken.enqueue(serverPackets.spectator_remove(self.userID))
+                hostToken.enqueue(server.spectator_remove(self.userID))
 
                 # and to all other spectators
                 for i in hostToken.spectators:
                     if i in glob.tokens.tokens:
                         glob.tokens.tokens[i].enqueue(
-                            serverPackets.spectator_comrade_left(self.userID),
+                            server.spectator_comrade_left(self.userID),
                         )
 
                 # If nobody is spectating the host anymore, close #spectator channel
@@ -396,7 +396,7 @@ class UserToken:
         # Try to join match
         joined = match.userJoin(self)
         if not joined:
-            self.enqueue(serverPackets.match_join_fail())
+            self.enqueue(server.match_join_fail())
             return
 
         # Set matchID, join stream, channel and send packet
@@ -407,12 +407,12 @@ class UserToken:
             channel=f"#multi_{self.matchID}",
             force=True,
         )
-        self.enqueue(serverPackets.match_join_success(matchID))
+        self.enqueue(server.match_join_success(matchID))
 
         if match.isTourney:
             # Alert the user if we have just joined a tourney match
             self.enqueue(
-                serverPackets.notification("You are now in a tournament match."),
+                server.notification("You are now in a tournament match."),
             )
             # If an user joins, then the ready status of the match changes and
             # maybe not all users are ready.
@@ -476,8 +476,8 @@ class UserToken:
             extra={"username": self.username, "reason": reason},
         )
         if message != "":
-            self.enqueue(serverPackets.notification(message))
-        self.enqueue(serverPackets.login_failed())
+            self.enqueue(server.notification(message))
+        self.enqueue(server.login_failed())
 
         # Logout event
         logoutEvent.handle(self, deleteToken=self.irc)
@@ -506,10 +506,10 @@ class UserToken:
         self.silenceEndTime = int(time.time()) + seconds
 
         # Send silence packet to user
-        self.enqueue(serverPackets.silence_end_notify(seconds))
+        self.enqueue(server.silence_end_notify(seconds))
 
         # Send silenced packet to everyone else
-        glob.streams.broadcast("main", serverPackets.silenced_notify(self.userID))
+        glob.streams.broadcast("main", server.silenced_notify(self.userID))
 
     def spamProtection(self, increaseSpamRate=True):
         """
@@ -606,7 +606,7 @@ class UserToken:
         # Ok so the only place where this is used is right after a priv refresh
         # from db so...
         if userUtils.isBanned(self.userID):
-            self.enqueue(serverPackets.login_banned())
+            self.enqueue(server.login_banned())
             logoutEvent.handle(self, deleteToken=False)
 
     def notify_restricted(self) -> None:
