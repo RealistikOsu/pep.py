@@ -6,7 +6,9 @@ from typing import Optional
 
 import settings
 from common import generalUtils
-from common.constants import gameModes, mods, privileges
+from common.constants import gameModes
+from common.constants import mods
+from common.constants import privileges
 from common.ripple import scoreUtils
 from objects import glob
 
@@ -77,7 +79,7 @@ def get_username(user_id: int) -> Optional[str]:
         Username or None if user doesn't exist.
     """
     result = glob.db.fetch(
-        "SELECT username FROM users WHERE id = %s LIMIT 1", [user_id]
+        "SELECT username FROM users WHERE id = %s LIMIT 1", [user_id],
     )
     if result is None:
         return None
@@ -171,7 +173,7 @@ def get_silence_end(user_id: int) -> int:
 
 
 def silence(
-    user_id: int, seconds: int, silence_reason: str, author: Optional[int] = None
+    user_id: int, seconds: int, silence_reason: str, author: Optional[int] = None,
 ) -> None:
     """Silence a user.
 
