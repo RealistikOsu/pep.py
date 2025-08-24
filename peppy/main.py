@@ -9,17 +9,11 @@ from multiprocessing.pool import ThreadPool
 import ddtrace
 import redis.exceptions
 import settings
-import tornado.gen
-import tornado.httpserver
-import tornado.ioloop
-import tornado.web
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 from common.db import dbConnector
 from common.redis import pubSub
-from handlers import api_status
-from handlers import apiAerisThing
-from handlers import apiOnlineUsersHandler
-from handlers import apiServerStatusHandler
-from handlers import mainHandler
 from helpers import systemHelper as system
 from helpers.status_helper import StatusManager
 from logger import configure_logging
@@ -34,25 +28,27 @@ from redis_handlers import notificationHandler
 from redis_handlers import refreshPrivsHandler
 from redis_handlers import updateSilenceHandler
 from redis_handlers import updateStatsHandler
+from routers import create_router
 
 logger = logging.getLogger(__name__)
 
 
-def make_app() -> tornado.web.Application:
-    return tornado.web.Application(
-        [
-            (r"/", mainHandler.handler),
-            (r"/api/v1/onlineUsers", apiOnlineUsersHandler.handler),
-            (r"/api/v1/serverStatus", apiServerStatusHandler.handler),
-            (r"/api/status/(.*)", api_status.handler),
-            (r"/api/v2/status/(.*)", api_status.handler),
-            (r"/infos", apiAerisThing.handler),
-        ],
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application."""
+    app = FastAPI(title="pep.py", version="1.0.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
+
+    return app
 
 
 def configure_folders() -> None:
-    """Create necessary data folders."""
     paths: tuple[str, ...] = (".data",)
     created_folders: list[str] = []
 
@@ -66,7 +62,6 @@ def configure_folders() -> None:
 
 
 def configure_mysql() -> None:
-    """Configure MySQL database connection."""
     logger.info(
         "Connecting to MySQL database",
         extra={
@@ -88,7 +83,6 @@ def configure_mysql() -> None:
 
 
 def configure_redis() -> None:
-    """Configure Redis connection and initialize cache."""
     logger.info(
         "Connecting to Redis",
         extra={
@@ -106,7 +100,6 @@ def configure_redis() -> None:
     )
     glob.redis.ping()
 
-    # Initialize Redis cache
     glob.redis.set("ripple:online_users", 0)
     try:
         deleted_keys = glob.redis.eval(
@@ -120,60 +113,47 @@ def configure_redis() -> None:
         # Script returns error if there are no keys starting with peppy:*
         pass
 
-    # Save peppy version in redis
     glob.redis.set("peppy:version", glob.__version__)
 
 
 def configure_bancho_settings() -> None:
-    """Load bancho configuration from database."""
     glob.banchoConf = banchoConfig.banchoConfig()
 
 
 def cleanup_old_sessions() -> None:
-    """Delete old bancho sessions from database."""
     deleted_count = glob.tokens.deleteBanchoSessions()
     if deleted_count:
         logger.info(
-            "Old bancho sessions cleaned up", extra={"deleted_count": deleted_count},
+            "Old bancho sessions cleaned up",
+            extra={"deleted_count": deleted_count},
         )
 
 
 def configure_thread_pool() -> None:
-    """Create thread pool for HTTP requests."""
     glob.pool = ThreadPool(settings.HTTP_THREAD_COUNT)
 
 
 def configure_fokabot() -> None:
-    """Connect to RealistikBot."""
     fokabot.connect()
 
 
 def configure_channels() -> None:
-    """Initialize chat channels."""
     channel_count = glob.channels.loadChannels()
     logger.info("Chat channels initialized", extra={"channel_count": channel_count})
 
 
 def configure_streams() -> None:
-    """Create packet streams."""
     glob.streams.add("main")
     glob.streams.add("lobby")
 
 
 def configure_background_tasks() -> None:
-    """Initialize background maintenance tasks."""
-    # User timeout check loop
     glob.tokens.usersTimeoutCheckLoop()
-
-    # Spam protection reset loop
     glob.tokens.spamProtectionResetLoop()
-
-    # Multiplayer cleanup loop
     glob.matches.cleanupLoop()
 
 
 def configure_user_statuses() -> None:
-    """Load user statuses from database."""
     status_manager = StatusManager()
     loaded_count = status_manager.load_from_db()
     glob.user_statuses = status_manager
@@ -182,7 +162,6 @@ def configure_user_statuses() -> None:
 
 
 def configure_pubsub() -> None:
-    """Configure Redis pubsub channels."""
     pubsub_handlers = {
         "peppy:disconnect": disconnectHandler.handler(),
         "peppy:reload_settings": lambda x: x == b"reload" and glob.banchoConf.reload(),
@@ -197,14 +176,17 @@ def configure_pubsub() -> None:
     pubSub.listener(glob.redis, pubsub_handlers).start()
 
 
+def configure_routers(app: FastAPI) -> None:
+    router = create_router()
+    app.include_router(router)
+
+
 def main() -> None:
     ddtrace.patch_all()
 
-    # Configure logging
     configure_logging()
 
     try:
-        # Configuration sequence
         configure_folders()
         configure_mysql()
         configure_redis()
@@ -217,15 +199,10 @@ def main() -> None:
         configure_background_tasks()
         configure_user_statuses()
 
-        # Debug mode
         glob.debug = DEBUG
         if glob.debug:
             logger.warning("Server running in debug mode!")
 
-        # Make app
-        glob.application = make_app()
-
-        # Server start message
         logger.info(
             "pep.py server starting",
             extra={
@@ -235,17 +212,21 @@ def main() -> None:
             },
         )
 
-        # Configure pubsub
         configure_pubsub()
 
-        # Initialize namespace for fancy stuff
         glob.namespace = globals() | {
             mod: __import__(mod) for mod in sys.modules if mod != "glob"
         }
 
-        # Start tornado
-        glob.application.listen(port=settings.HTTP_PORT, address=settings.HTTP_ADDRESS)
-        tornado.ioloop.IOLoop.instance().start()
+        app = create_app()
+        configure_routers(app)
+
+        uvicorn.run(
+            app,
+            host=settings.HTTP_ADDRESS,
+            port=settings.HTTP_PORT,
+            log_level="info" if not glob.debug else "debug",
+        )
     finally:
         system.dispose()
 

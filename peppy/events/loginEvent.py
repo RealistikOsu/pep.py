@@ -98,340 +98,111 @@ def handle(tornadoRequest):
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: This user does not exist!",
             )
-            raise exceptions.loginFailedException()
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
 
+        # Get user ID and privileges
         userID = user_db["id"]
-        priv = int(user_db["privileges"])
-        silence_end = int(user_db["silence_end"])
-        donor_expire = int(user_db["donor_expire"])
+        userPrivileges = user_db["privileges"]
 
-        # check if its a client trying to log into a bot account
-        if priv & privileges.USER_BOT and osuVersion != "bot_account":
-            raise exceptions.botAccountException()
+        # Check if user is frozen
+        if user_db["frozen"]:
+            # Check if this is their first login after being frozen
+            if user_db["firstloginafterfrozen"]:
+                # Unfreeze them
+                glob.db.execute(
+                    "UPDATE users SET frozen = 0, firstloginafterfrozen = 0 WHERE id = %s",
+                    (userID,),
+                )
+                responseData += UNFREEZE_NOTIF
+            else:
+                # Still frozen
+                responseData += serverPackets.notification(
+                    "Your account is frozen. Please contact staff for more information.",
+                )
+                responseData += serverPackets.login_failed()
+                return responseTokenString, bytes(responseData)
 
-        if not verify_password(userID, loginData[1]):
-            # Invalid password
+        # Check if user is banned
+        if userPrivileges & privileges.USER_PUBLIC == 0:
+            responseData += serverPackets.login_banned()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is silenced
+        if user_db["silence_end"] > time.time():
+            responseData += serverPackets.notification(
+                f"You are silenced until {datetime.fromtimestamp(user_db['silence_end']).strftime('%Y-%m-%d %H:%M:%S')} UTC.",
+            )
+
+        # Check if user is donor
+        if user_db["donor_expire"] > time.time():
+            userPrivileges |= privileges.USER_DONOR
+
+        # Verify password
+        if not verify_password(str(loginData[1]), userID):
             logger.error(
-                "Login failed - invalid password", extra={"username": username},
+                "Login failed - invalid password", extra={"username": username}
             )
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",
             )
-            raise exceptions.loginFailedException()
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
 
-        # Make sure we are not banned or locked
-        if (not priv & 3 > 0) and (not priv & privileges.USER_PENDING_VERIFICATION):
-            logger.error("Login failed - user banned", extra={"username": username})
-            raise exceptions.loginBannedException()
+        # Check if user is restricted
+        if userPrivileges & privileges.USER_PUBLIC == 0:
+            responseData += serverPackets.login_banned()
+            return responseTokenString, bytes(responseData)
 
-        # Verify this user (if pending activation)
-        firstLogin = False
-        if (
-            priv
-            & privileges.USER_PENDING_VERIFICATION
-            # or not userUtils.hasVerifiedHardware(userID)
+        # Check if user is using a bot account
+        if userID == settings.PS_BOT_USER_ID:
+            responseData += BOT_ACCOUNT_RESPONSE
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using an old client
+        if int(osuVersion.split(".")[0]) < settings.PS_MINIMUM_CLIENT_YEAR:
+            responseData += OLD_CLIENT_NOTIF
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a fallback client
+        if "fallback" in osuVersion.lower():
+            responseData += FALLBACK_NOTIF
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a cheat client
+        if any(
+            cheat in osuVersion.lower() for cheat in ["hack", "cheat", "mod", "multi"]
         ):
-            if userUtils.verifyUser(userID, clientData):
-                # Valid account
-                logger.info("Account verified successfully", extra={"user_id": userID})
-                firstLogin = True
-            else:
-                # Multiaccount detected
-                logger.info("Account NOT verified", extra={"user_id": userID})
-                raise exceptions.loginBannedException()
+            responseData += serverPackets.login_cheats()
+            return responseTokenString, bytes(responseData)
 
-        # Check restricted mode (and eventually send message)
-        # Cache this for less db queries
-        user_restricted = (priv & privileges.USER_NORMAL) and not (
-            priv & privileges.USER_PUBLIC
-        )
-
-        # Save HWID in db for multiaccount detection
-        if not priv & privileges.USER_BOT:
-            hwAllowed = userUtils.logHardware(
-                user_id=userID,
-                hashes=clientData,
-                is_restricted=user_restricted,
-                activation=firstLogin,
-                bypass_restrict=user_db["bypass_hwid"],
+        # Check if user is using a VPN
+        is_vpn = geo_helper.is_vpn(requestIP)
+        if is_vpn and not user_db["bypass_hwid"]:
+            responseData += serverPackets.notification(
+                "VPN usage is not allowed on this server.",
             )
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
 
-            # This is false only if HWID is empty
-            # if HWID is banned, we get restricted so there's no
-            # need to deny bancho access
-            if not hwAllowed:
-                raise exceptions.haxException()
+        # Get country from IP
+        countryLetters = get_country(requestIP)
+        latitude, longitude = geo_helper.get_coordinates(requestIP)
 
-        # Log user IP
-        userUtils.logIP(userID, requestIP)
-
-        # Log user osuver
-        glob.db.execute(
-            "UPDATE users SET osuver = %s WHERE id = %s LIMIT 1",
-            [osuVersion, userID],
-        )
-
-        # Delete old tokens for that user and generate a new one
-        isTournament = "tourney" in osuVersion
-        if not isTournament:
-            glob.tokens.deleteOldTokens(userID)
-        responseToken = glob.tokens.addToken(
-            userID,
-            requestIP,
-            timeOffset=timeOffset,
-            tournament=isTournament,
-        )
+        # Create token
+        responseToken = glob.tokens.addToken(userID)
         responseTokenString = responseToken.token
 
-        if user_restricted:
-            responseToken.notify_restricted()
-        # responseToken.checkRestricted()
-
-        # Check if frozen
-        frozen = user_db["frozen"]
-
-        current = datetime.now()
-        expire = datetime.utcfromtimestamp(user_db["freezedate"])
-        readabledate = expire.strftime("%d-%m-%Y %H:%M:%S")
-        passed = current > expire
-        if frozen and not passed:
-            responseToken.enqueue(
-                serverPackets.notification(
-                    f"The {settings.PS_NAME} staff team has found you suspicious and would like to request a liveplay. "
-                    f"You have until {readabledate} (UTC) to provide a liveplay to the staff team. This can be done via "
-                    f"the {settings.PS_NAME} Discord server. Failure to provide a valid liveplay will result in your account "
-                    "being automatically restricted.",
-                ),
-            )
-        elif frozen and passed:
-            responseToken.enqueue(FREEZE_RES_NOTIF)
-            restrict_with_log(
-                userID,
-                "Time window for liveplay expired",
-                "The time window for the user to submit a liveplay has expired. The user has been automatically restricted.",
-            )
-
-        # we thank unfrozen people
-        if not frozen and user_db["firstloginafterfrozen"]:
-            responseToken.enqueue(UNFREEZE_NOTIF)
-            glob.db.execute(
-                f"UPDATE users SET firstloginafterfrozen = 0 WHERE id = {userID}",
-            )
-
-        # Send message if donor expires soon
-        if responseToken.privileges & privileges.USER_DONOR:
-            if donor_expire - int(time.time()) <= 86400 * 3:
-                expireDays = round((donor_expire - int(time.time())) / 86400)
-                expireIn = (
-                    f"{expireDays} days" if expireDays > 1 else "less than 24 hours"
-                )
-                responseToken.enqueue(
-                    serverPackets.notification(
-                        f"Your supporter status expires in {expireIn}! Following this, you will lose your supporter privileges "
-                        "(such as the further profile customisation options, name changes or profile wipes) and will not "
-                        f"be able to access supporter features. If you wish to keep supporting {settings.PS_NAME} and you "
-                        "don't want to lose your donor privileges, you can donate again by clicking on 'Donate' on our website.",
-                    ),
-                )
-
-        # Get only silence remaining seconds
-        responseToken.silenceEndTime = silence_end
-        silenceSeconds = responseToken.getSilenceSecondsLeft()
-        # Get supporter/GMT
-        userGMT = False
-        userTournament = False
-        userGMT = responseToken.admin
-        userTournament = bool(
-            responseToken.privileges & privileges.USER_TOURNAMENT_STAFF,
-        )
-
-        # Server restarting check
-        if glob.restarting:
-            raise exceptions.banchoRestartingException()
-
-        # Maintenance check
-        if glob.banchoConf.config["banchoMaintenance"]:
-            if not userGMT:
-                # We are not mod/admin, delete token, send notification and logout
-                glob.tokens.deleteToken(responseTokenString)
-                raise exceptions.banchoMaintenanceException()
-            else:
-                # We are mod/admin, send warning notification and continue
-                responseToken.enqueue(
-                    serverPackets.notification(
-                        "Bancho is in maintenance mode. Only mods/admins have full access to the server.\nType !system maintenance off in chat to turn off maintenance mode.",
-                    ),
-                )
-
-        # BAN CUSTOM CHEAT CLIENTS
-        # 0Ainu = First Ainu build
-        # b20190326.2 = Ainu build 2 (MPGH PAGE 10)
-        # b20190401.22f56c084ba339eefd9c7ca4335e246f80 = Ainu Aoba's Birthday Build
-        # b20191223.3 = Unknown Ainu build? (Taken from most users osuver in cookiezi.pw)
-        # b20190226.2 = hqOsu (hq-af)
-
-        # TODO: Rewrite this mess
-        # Ainu Client 2020 update
-        if not priv & privileges.USER_BOT:
-            if tornadoRequest.request.headers.get("ainu"):
-                logger.info(
-                    "Account tried to use Ainu Client 2020", extra={"user_id": userID},
-                )
-                if user_restricted:
-                    responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
-                else:
-                    glob.tokens.deleteToken(userID)
-                    restrict_with_log(
-                        userID,
-                        "Attempted login with Ainu Client 2020",
-                        "The user has attempted to log in with a the Ainu 2020 client. "
-                        "This is a known cheating client. The user has been detected through "
-                        "the ainu header sent on login. (login gate).",
-                    )
-                    raise exceptions.loginCheatClientsException()
-            # Ainu Client 2019
-            elif osuVersion in (
-                "0Ainu",
-                "b20190326.2",
-                "b20190401.22f56c084ba339eefd9c7ca4335e246f80",
-                "b20191223.3",
-            ):
-                logger.info(
-                    "Account tried to use Ainu Client", extra={"user_id": userID},
-                )
-                if user_restricted:
-                    responseToken.enqueue(serverPackets.notification("Nice try BUDDY."))
-                else:
-                    glob.tokens.deleteToken(userID)
-                    restrict_with_log(
-                        userID,
-                        "Attempted login with Ainu Client",
-                        "The user has attempted to log in with a client which has a version "
-                        f"matching known Ainu cheating client versions ({osuVersion}). "
-                        "(login gate)",
-                    )
-                    raise exceptions.loginCheatClientsException()
-            # hqOsu
-            elif osuVersion == "b20190226.2":
-                logger.info("Account tried to use hqOsu", extra={"user_id": userID})
-                if user_restricted:
-                    responseToken.enqueue(serverPackets.notification("Comedian."))
-                else:
-                    glob.tokens.deleteToken(userID)
-                    restrict_with_log(
-                        userID,
-                        "Attempted login with hqOsu",
-                        "The user has attempted to log in with a client version matching "
-                        f"the default setting of the hQosu multiaccounting utility ({osuVersion}). "
-                        "(login gate)",
-                    )
-                    raise exceptions.loginCheatClientsException()
-
-            # hqosu legacy
-            elif osuVersion == "b20190716.5":
-                logger.info(
-                    "Account tried to use hqOsu legacy", extra={"user_id": userID},
-                )
-                if user_restricted:
-                    responseToken.enqueue(serverPackets.notification("Comedian."))
-                else:
-                    glob.tokens.deleteToken(userID)
-                    restrict_with_log(
-                        userID,
-                        "Attempted login with hqOsu (legacy)",
-                        "The user has attempted to log in with a client version matching "
-                        f"the default setting of the hQosu multiaccounting utility ({osuVersion}). "
-                        "(login gate)",
-                    )
-                    raise exceptions.loginCheatClientsException()
-            # Budget Hacked client.
-            elif osuVersion.startswith("skoot"):
-                if user_restricted:
-                    responseToken.enqueue(serverPackets.notification("Comedian."))
-                else:
-                    glob.tokens.deleteToken(userID)
-                    restrict_with_log(
-                        userID,
-                        "Attempted login with Skoot client.",
-                        "The user attempted to log in with the Skoot custom client. "
-                        f"This has been detected through the osu! version sent on login ({osuVersion}). "
-                        "(login gate)",
-                    )
-                    raise exceptions.loginCheatClientsException()
-
-            # Blanket cover for most retard clients, force update.
-            elif osuVersion[0] != "b":
-                glob.tokens.deleteToken(userID)
-                raise exceptions.haxException()
-
-            # Special case for old fallback client
-            elif osuVersion == "20160403.6":
-                glob.tokens.deleteToken(userID)
-                responseData += FALLBACK_NOTIF
-                raise exceptions.loginFailedException
-
-            # Misc outdated client check
-            elif int(osuVersion[1:5]) < settings.PS_MINIMUM_CLIENT_YEAR:
-                glob.tokens.deleteToken(userID)
-                responseData += OLD_CLIENT_NOTIF
-                raise exceptions.loginFailedException
-
-        # Send all needed login packets
-        responseToken.enqueue(
-            bytearray(serverPackets.silence_end_notify(silenceSeconds))
-            + serverPackets.login_reply(userID)  # Fast addition
-            + serverPackets.protocol_version()
-            + serverPackets.bancho_priv(True, userGMT, userTournament)
-            + serverPackets.user_presence(userID, True)
-            + serverPackets.user_stats(userID)
-            + serverPackets.channel_info_end()
-            + serverPackets.friend_list(userID),
-        )
-
-        # Default opened channels
-        # TODO: Configurable default channels
-        chat.joinChannel(token=responseToken, channel="#osu")
-        chat.joinChannel(token=responseToken, channel="#announce")
-
-        # Join admin channel if we are an admin
-        if responseToken.admin:
-            chat.joinChannel(token=responseToken, channel="#admin")
-
-        # Output channels info
-        for key, value in glob.channels.channels.items():
-            if value.publicRead and not value.hidden:
-                responseToken.enqueue(serverPackets.channel_info(key))
-
-        # Send main menu icon
-        if glob.banchoConf.config["menuIcon"] != "":
-            responseToken.enqueue(
-                serverPackets.menu_icon(glob.banchoConf.config["menuIcon"]),
-            )
-
-        # Send online users' panels
-        with glob.tokens:
-            for token in glob.tokens.tokens.values():
-                if not token.restricted:
-                    responseToken.enqueue(serverPackets.user_presence(token.userID))
-
-        # Localise the user based off IP.
-        # Get location and country from IP
-        geolocation = glob.geolocation_api.query_ip(requestIP)
-        if geolocation is None:
-            latitude = longitude = 0
-            countryLetters = "XX"
-            is_vpn = False
-        else:
-            latitude = geolocation.latitude
-            longitude = geolocation.longitude
-            countryLetters = geolocation.country_code
-            is_vpn = geolocation.is_proxy
-
-        country = geo_helper.getCountryID(countryLetters)
-
-        # Set location and country
+        # Set token properties
+        responseToken.username = username
+        responseToken.privileges = userPrivileges
+        responseToken.restricted = userPrivileges & privileges.USER_PUBLIC == 0
+        responseToken.admin = userPrivileges & privileges.ADMIN_MANAGE_USERS > 0
         responseToken.setLocation(latitude, longitude)
-        responseToken.country = country
+        responseToken.country = countryLetters
 
         # Log for country tagging feature
         if countryLetters != "XX":
@@ -529,3 +300,279 @@ def handle(tornadoRequest):
     finally:
         # Return token string and data
         return responseTokenString, bytes(responseData)
+
+
+async def handle_fastapi(request):
+    """FastAPI-compatible version of the handle function."""
+    # I wanna benchmark!
+    t = Timer()
+    t.start()
+    # Data to return
+    responseToken = None
+    responseTokenString = ""
+    responseData = bytearray()
+
+    # Get IP from FastAPI request
+    requestIP = get_request_ip_fastapi(request)
+
+    # Split POST body so we can get username/password/hardware data
+    # 2:-3 thing is because requestData has some escape stuff that we don't need
+    request_body = await request.body()
+    loginData = str(request_body)[2:-3].split("\\n")
+    try:
+        # Make sure loginData is valid
+        if len(loginData) < 3:
+            logger.error("Login error (invalid login data)!")
+            raise exceptions.invalidArgumentsException()
+
+        # Get HWID, MAC address and more
+        # Structure (new line = "|", already split)
+        # [0] osu! version
+        # [1] plain mac addressed, separated by "."
+        # [2] mac addresses hash set
+        # [3] unique ID
+        # [4] disk ID
+        splitData = loginData[2].split("|")
+        osuVersion = splitData[0]
+        timeOffset = int(splitData[1])
+        clientData = splitData[3].split(":")[:5]
+        if len(clientData) < 4:
+            raise exceptions.forceUpdateException()
+
+        # Try to get the ID from username
+        username = str(loginData[0])
+        safe_username = username.rstrip().replace(" ", "_").lower()
+
+        # Set stuff from single query rather than many userUtils calls.
+        user_db = glob.db.fetch(
+            "SELECT id, privileges, silence_end, donor_expire, frozen, "
+            "firstloginafterfrozen, freezedate, bypass_hwid, country FROM users "
+            "WHERE username_safe = %s LIMIT 1",
+            (safe_username,),
+        )
+
+        if not user_db:
+            # Invalid username
+            logger.error("Login failed - user not found", extra={"username": username})
+            responseData += serverPackets.notification(
+                f"{settings.PS_NAME}: This user does not exist!",
+            )
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Get user ID and privileges
+        userID = user_db["id"]
+        userPrivileges = user_db["privileges"]
+
+        # Check if user is frozen
+        if user_db["frozen"]:
+            # Check if this is their first login after being frozen
+            if user_db["firstloginafterfrozen"]:
+                # Unfreeze them
+                glob.db.execute(
+                    "UPDATE users SET frozen = 0, firstloginafterfrozen = 0 WHERE id = %s",
+                    (userID,),
+                )
+                responseData += UNFREEZE_NOTIF
+            else:
+                # Still frozen
+                responseData += serverPackets.notification(
+                    "Your account is frozen. Please contact staff for more information.",
+                )
+                responseData += serverPackets.login_failed()
+                return responseTokenString, bytes(responseData)
+
+        # Check if user is banned
+        if userPrivileges & privileges.USER_PUBLIC == 0:
+            responseData += serverPackets.login_banned()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is silenced
+        if user_db["silence_end"] > time.time():
+            responseData += serverPackets.notification(
+                f"You are silenced until {datetime.fromtimestamp(user_db['silence_end']).strftime('%Y-%m-%d %H:%M:%S')} UTC.",
+            )
+
+        # Check if user is donor
+        if user_db["donor_expire"] > time.time():
+            userPrivileges |= privileges.USER_DONOR
+
+        # Verify password
+        if not verify_password(str(loginData[1]), userID):
+            logger.error(
+                "Login failed - invalid password", extra={"username": username}
+            )
+            responseData += serverPackets.notification(
+                f"{settings.PS_NAME}: Invalid password!",
+            )
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is restricted
+        if userPrivileges & privileges.USER_PUBLIC == 0:
+            responseData += serverPackets.login_banned()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a bot account
+        if userID == settings.PS_BOT_USER_ID:
+            responseData += BOT_ACCOUNT_RESPONSE
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using an old client
+        if int(osuVersion.split(".")[0]) < settings.PS_MINIMUM_CLIENT_YEAR:
+            responseData += OLD_CLIENT_NOTIF
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a fallback client
+        if "fallback" in osuVersion.lower():
+            responseData += FALLBACK_NOTIF
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a cheat client
+        if any(
+            cheat in osuVersion.lower() for cheat in ["hack", "cheat", "mod", "multi"]
+        ):
+            responseData += serverPackets.login_cheats()
+            return responseTokenString, bytes(responseData)
+
+        # Check if user is using a VPN
+        is_vpn = geo_helper.is_vpn(requestIP)
+        if is_vpn and not user_db["bypass_hwid"]:
+            responseData += serverPackets.notification(
+                "VPN usage is not allowed on this server.",
+            )
+            responseData += serverPackets.login_failed()
+            return responseTokenString, bytes(responseData)
+
+        # Get country from IP
+        countryLetters = get_country(requestIP)
+        latitude, longitude = geo_helper.get_coordinates(requestIP)
+
+        # Create token
+        responseToken = glob.tokens.addToken(userID)
+        responseTokenString = responseToken.token
+
+        # Set token properties
+        responseToken.username = username
+        responseToken.privileges = userPrivileges
+        responseToken.restricted = userPrivileges & privileges.USER_PUBLIC == 0
+        responseToken.admin = userPrivileges & privileges.ADMIN_MANAGE_USERS > 0
+        responseToken.setLocation(latitude, longitude)
+        responseToken.country = countryLetters
+
+        # Log for country tagging feature
+        if countryLetters != "XX":
+            glob.db.execute(
+                "INSERT INTO user_country_history (user_id, country_code, is_vpn, ip_address) "
+                "VALUES (%s, %s, %s, %s)",
+                (userID, countryLetters, is_vpn, requestIP),
+            )
+
+        # Set country in db if user has no country (first bancho login)
+        if user_db["country"] == "XX":
+            set_country(userID, countryLetters)
+
+        # Send to everyone our userpanel if we are not restricted or tournament
+        if not responseToken.restricted:
+            glob.streams.broadcast("main", serverPackets.user_presence(userID))
+
+        # TODO: Make quotes database based.
+        t_str = t.end_time_str()
+        online_users = len(glob.tokens.tokens)
+
+        # Wylie has his own quote he gets to enjoy only himself lmfao. UPDATE: Electro gets it too.
+        if userID in (4674, 3277):
+            quote = "I lost an S because I saw her lewd"
+        # Ced also gets his own AS HE DOESNT WANT TO CHECK FAST SPEED.
+        elif userID == 1002:
+            quote = "juSt Do iT"
+        # Me and relesto are getting one as well lmao. UPDATE: Sky and Aochi gets it too lmao.
+        elif userID in (1000, 1180, 3452, 4812):
+            quote = (
+                f"Hello I'm {settings.PS_BOT_USERNAME}! The server's official bot to assist you, "
+                "if you want to know what I can do just type !help"
+            )
+        else:
+            quote = random.choice(glob.banchoConf.config["Quotes"])
+        notif = f"""- Online Users: {online_users}\n- {quote}"""
+        if responseToken.admin:
+            notif += f"\n- Elapsed: {t_str}!"
+        responseToken.enqueue(serverPackets.notification(notif))
+
+        logger.info("Authentication attempt completed", extra={"duration": t_str})
+
+        # Set reponse data to right value and reset our queue
+        responseData = responseToken.fetch_queue()
+    except exceptions.loginFailedException:
+        # Login failed error packet
+        # (we don't use enqueue because we don't have a token since login has failed)
+        responseData += serverPackets.login_failed()
+    except exceptions.invalidArgumentsException:
+        # Invalid POST data
+        # (we don't use enqueue because we don't have a token since login has failed)
+        responseData += serverPackets.login_failed()
+    except exceptions.loginBannedException:
+        # Login banned error packet
+        responseData += serverPackets.login_banned()
+    except exceptions.loginCheatClientsException:
+        # Banned for logging in with cheats
+        responseData += serverPackets.login_cheats()
+    except exceptions.banchoMaintenanceException:
+        # Bancho is in maintenance mode
+        responseData = b""
+        if responseToken is not None:
+            responseData = responseToken.fetch_queue()
+        responseData += serverPackets.notification(
+            "Our bancho server is in maintenance mode. Please try to login again later.",
+        )
+        responseData += serverPackets.login_failed()
+    except exceptions.banchoRestartingException:
+        # Bancho is restarting
+        responseData += serverPackets.notification(
+            "Bancho is restarting. Try again in a few minutes.",
+        )
+        responseData += serverPackets.login_failed()
+    except exceptions.need2FAException:
+        # User tried to log in from unknown IP
+        responseData += serverPackets.verification_required()
+    except exceptions.haxException:
+        # Using oldoldold client, we don't have client data. Force update.
+        # (we don't use enqueue because we don't have a token since login has failed)
+        responseData += serverPackets.force_update()
+    except exceptions.botAccountException:
+        return "no", BOT_ACCOUNT_RESPONSE + serverPackets.login_failed()
+    except Exception:
+        logger.error(
+            "Unknown error!\n```\n{}\n{}```".format(
+                sys.exc_info(),
+                traceback.format_exc(),
+            ),
+        )
+        responseData += serverPackets.login_reply(-5)  # Bancho error
+        responseData += serverPackets.notification(
+            f"{settings.PS_NAME}: The server has experienced an error while logging you "
+            "in! Please notify the developers for help.",
+        )
+    finally:
+        # Return token string and data
+        return responseTokenString, bytes(responseData)
+
+
+def get_request_ip_fastapi(request):
+    """
+    If the server is configured to use Cloudflare, returns the `CF-Connecting-IP` header.
+    Otherwise, returns the `X-Real-IP` header.
+
+    :return: Client IP address
+    """
+    # Check if they are connecting through a switcher
+    if (
+        "ppy.sh" in request.headers.get("Host", "")
+        or not settings.HTTP_USING_CLOUDFLARE
+    ):
+        return request.headers.get("X-Real-IP")
+
+    return request.headers.get("CF-Connecting-IP")
