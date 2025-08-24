@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import logging
+
 from common.ripple import userUtils
 from constants import clientPackets
-import logging
 
 logger = logging.getLogger(__name__)
 

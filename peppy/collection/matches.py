@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 import time
 
@@ -7,7 +8,6 @@ from constants import serverPackets
 from constants.exceptions import periodicLoopException
 from objects import glob
 from objects.match import Match
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,8 @@ class MatchList:
                     continue
                 if t - m.createTime >= 120:
                     logger.debug(
-                        "Match marked for cleanup", extra={"match_id": m.matchID},
+                        "Match marked for cleanup",
+                        extra={"match_id": m.matchID},
                     )
                     emptyMatches.append(m.matchID)
 

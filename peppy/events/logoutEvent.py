@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 
 from constants import serverPackets
 from helpers import chatHelper as chat
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -58,5 +58,6 @@ def handle(userToken, _=None, deleteToken=True):
 
         # Console output
         logger.info(
-            "User disconnected", extra={"username": username, "reason": "logout"},
+            "User disconnected",
+            extra={"username": username, "reason": "logout"},
         )

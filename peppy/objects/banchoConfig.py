@@ -1,10 +1,11 @@
 # TODO: Rewrite this shit
 from __future__ import annotations
 
+import logging
+
 from common import generalUtils
 from constants import serverPackets
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 

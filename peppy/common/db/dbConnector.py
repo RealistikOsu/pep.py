@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import queue
 import time
 from typing import Any
@@ -7,7 +8,6 @@ from typing import Optional
 
 import MySQLdb
 from MySQLdb.connections import Connection
-import logging
 
 logger = logging.getLogger(__name__)
 

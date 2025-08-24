@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 from typing import TYPE_CHECKING
 
 from objects import glob
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,8 @@ class Stream:
             token = client.token
         if token not in self.clients:
             logger.info(
-                "Token joined stream", extra={"token": token, "stream": self.name},
+                "Token joined stream",
+                extra={"token": token, "stream": self.name},
             )
             self.clients.append(token)
             return True
@@ -65,7 +66,8 @@ class Stream:
             token = client.token
         if token in self.clients:
             logger.info(
-                "Token left stream", extra={"token": token, "stream": self.name},
+                "Token left stream",
+                extra={"token": token, "stream": self.name},
             )
             self.clients.remove(token)
 

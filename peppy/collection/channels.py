@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from helpers import chatHelper as chat
 from objects import glob
 from objects.channel import Channel
-import logging
 
 logger = logging.getLogger(__name__)
 

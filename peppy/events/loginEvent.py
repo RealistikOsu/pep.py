@@ -141,7 +141,7 @@ def handle(tornadoRequest):
         # Verify password
         if not verify_password(str(loginData[1]), userID):
             logger.error(
-                "Login failed - invalid password", extra={"username": username}
+                "Login failed - invalid password", extra={"username": username},
             )
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",
@@ -400,7 +400,7 @@ async def handle_fastapi(request):
         # Verify password
         if not verify_password(str(loginData[1]), userID):
             logger.error(
-                "Login failed - invalid password", extra={"username": username}
+                "Login failed - invalid password", extra={"username": username},
             )
             responseData += serverPackets.notification(
                 f"{settings.PS_NAME}: Invalid password!",

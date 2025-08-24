@@ -350,7 +350,8 @@ class Match:
         # Set loaded to True
         self.slots[slotID].loaded = True
         logger.info(
-            "User loaded in match", extra={"match_id": self.matchID, "user_id": userID},
+            "User loaded in match",
+            extra={"match_id": self.matchID, "user_id": userID},
         )
 
         # Check all loaded
@@ -376,7 +377,8 @@ class Match:
             serverPackets.match_all_players_loaded(),
         )
         logger.info(
-            "All players loaded - match starting", extra={"match_id": self.matchID},
+            "All players loaded - match starting",
+            extra={"match_id": self.matchID},
         )
 
     def playerSkip(self, userID: int) -> None:
@@ -393,7 +395,8 @@ class Match:
         # Set skip to True
         self.slots[slotID].skip = True
         logger.info(
-            "User skipped in match", extra={"match_id": self.matchID, "user_id": userID},
+            "User skipped in match",
+            extra={"match_id": self.matchID, "user_id": userID},
         )
 
         # Send skip packet to every playing user
@@ -740,7 +743,8 @@ class Match:
         self.mods = mods
         self.sendUpdates()
         logger.info(
-            "Match mods changed", extra={"match_id": self.matchID, "mods": self.mods},
+            "Match mods changed",
+            extra={"match_id": self.matchID, "mods": self.mods},
         )
 
     def userHasBeatmap(self, userID: int, has: bool = True):
@@ -804,7 +808,8 @@ class Match:
 
         # Console output
         logger.info(
-            "User failed in match", extra={"match_id": self.matchID, "user_id": userID},
+            "User failed in match",
+            extra={"match_id": self.matchID, "user_id": userID},
         )
 
     def invite(self, fro: int, to: int):
@@ -926,7 +931,8 @@ class Match:
                     firstTeam = self.slots[i].team
                 elif firstTeam != self.slots[i].team:
                     logger.info(
-                        "Match teams are valid", extra={"match_id": self.matchID},
+                        "Match teams are valid",
+                        extra={"match_id": self.matchID},
                     )
                     return True
 

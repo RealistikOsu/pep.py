@@ -472,7 +472,8 @@ class UserToken:
         """
         # Send packet to target
         logger.info(
-            "User disconnected", extra={"username": self.username, "reason": reason},
+            "User disconnected",
+            extra={"username": self.username, "reason": reason},
         )
         if message != "":
             self.enqueue(serverPackets.notification(message))

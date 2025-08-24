@@ -69,7 +69,7 @@ async def online_users_handler() -> OnlineUsersResponse:
 async def server_status_handler() -> ServerStatusResponse:
     """Handle server status API endpoint."""
     return ServerStatusResponse(
-        status=200, message="ok", result=-1 if glob.restarting else 1
+        status=200, message="ok", result=-1 if glob.restarting else 1,
     )
 
 

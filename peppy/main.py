@@ -9,11 +9,11 @@ from multiprocessing.pool import ThreadPool
 import ddtrace
 import redis.exceptions
 import settings
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from common.db import dbConnector
 from common.redis import pubSub
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from helpers import systemHelper as system
 from helpers.status_helper import StatusManager
 from logger import configure_logging
