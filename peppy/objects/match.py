@@ -88,7 +88,6 @@ class Match:
         self._lock = threading.Lock()
         self.createTime = int(time.time())
         self.vinseID = None
-        self.bloodcatAlert = False
 
         self.pp_competition = True
 
@@ -518,16 +517,6 @@ class Match:
 
         # Set vinse id if needed
         chanName = f"#multi_{self.matchID}"
-        # Changing this to be a general notice.
-        if not self.bloodcatAlert:
-            chat.sendMessage(
-                glob.BOT_NAME,
-                chanName,
-                f"Hey! Welcome to the {settings.PS_NAME} multiplayer! If you ever encounter "
-                "a map you are unable to download through our direct, you can use the "
-                "!mirror command to get an external download link!",
-            )
-            self.bloodcatAlert = True
 
         # If this is a tournament match, then we send a notification in the chat
         # saying that the match has completed.

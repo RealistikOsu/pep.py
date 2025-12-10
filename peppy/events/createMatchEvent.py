@@ -5,6 +5,8 @@ from constants import exceptions
 from constants import serverPackets
 from logger import log
 from objects import glob
+from helpers import chatHelper as chat
+from settings import settings
 
 
 def handle(userToken, packetData):
@@ -40,6 +42,7 @@ def handle(userToken, packetData):
             # Join that match
             userToken.joinMatch(matchID)
 
+
             # Multiplayer Room Patch
             for i in range(0, 16):
                 if match.slots[i].status != 4:
@@ -49,6 +52,21 @@ def handle(userToken, packetData):
             match.setHost(userID)
             match.sendUpdates()
             match.changePassword(packetData["matchPassword"])
+
+            # Send a welcome channel message to the match creator
+            chat.sendMessage(
+                fro=glob.BOT_NAME,
+                to=f"#multi_{match.matchID}",
+                message=f"Welcome to {settings.PS_NAME} multiplayer!",
+            )
+            chat.sendMessage(
+                fro=glob.BOT_NAME,
+                to=f"#multi_{match.matchID}",
+                message=(
+                    "By default, RealistikOsu uses PP for multiplayer leaderboards. "
+                    "This can be toggled by the host using the !mp pp command."
+                ),
+            )
     except exceptions.matchCreateError:
         log.error("Error while creating match!")
         userToken.enqueue(serverPackets.match_join_fail())
