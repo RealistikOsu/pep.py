@@ -90,7 +90,7 @@ class Match:
         self.vinseID = None
         self.bloodcatAlert = False
 
-        self.pp_competition = False
+        self.pp_competition = True
 
         # Create all slots and reset them
         self.slots: list[Slot] = []
