@@ -168,9 +168,9 @@ def user_stats(userID):
     rankedScore = userToken.rankedScore
     performancePoints = userToken.pp
 
-    # Since performance points are a signed int, send PP as the score (since this mostly
+    # Since performance points are an usigned int, send PP as the score (since this mostly
     # will occur in RX and RX players don't care about score).
-    if performancePoints >= 32767:
+    if performancePoints >= 65535:
         rankedScore = performancePoints
         performancePoints = 0
 
@@ -189,7 +189,7 @@ def user_stats(userID):
             (userToken.playcount, dataTypes.SINT32),
             (userToken.totalScore, dataTypes.SINT64),
             (userToken.gameRank, dataTypes.SINT32),
-            (performancePoints, dataTypes.SINT16),
+            (performancePoints, dataTypes.UINT16),
         ),
     )
 

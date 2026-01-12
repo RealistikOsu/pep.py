@@ -5,7 +5,7 @@ import sys
 import traceback
 from multiprocessing.pool import ThreadPool
 
-import ddtrace
+#import ddtrace
 import redis.exceptions
 import settings
 import tornado.gen
@@ -50,7 +50,7 @@ def make_app():
 
 
 def main():
-    ddtrace.patch_all()
+    #ddtrace.patch_all()
     try:
         # Server start
         consoleHelper.printServerStartHeader(True)

@@ -6,7 +6,7 @@ from constants import serverPackets
 from logger import log
 from objects import glob
 from helpers import chatHelper as chat
-from settings import settings
+import settings
 
 
 def handle(userToken, packetData):

@@ -1180,6 +1180,28 @@ def mpPPCompetition(fro, chan, message):
         f"PP competition has been {'enabled' if _match.pp_competition else 'disabled'}!"
     )
 
+@registerCommand(
+    "!mp abort",
+)
+def mpAbort(fro, chan, message):
+    """Aborts a match in progress."""
+
+    token = glob.tokens.getTokenFromUsername(fro)
+    if token is None:
+        return False
+
+    _match = glob.matches.matches[getMatchIDFromChannel(chan)]  # type: ignore
+
+    if _match.hostUserID != token.userID:
+        return "Only the host can abort the game."
+    
+    if not _match.inProgress:
+        return "Match is not in progress." 
+
+    _match.allPlayersCompleted()
+    return (
+        "Match has been aborted!"
+    )
 
 @registerCommand(
     "!mp start",
