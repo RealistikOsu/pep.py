@@ -269,7 +269,7 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
     bmapset_or_bmap = "beatmapset_id" if set_check else "beatmap_id"
 
     res = glob.db.fetch(
-        "SELECT ranked, beatmapset_id, song_name "
+        "SELECT ranked, beatmapset_id, song_name, mode "
         "FROM beatmaps WHERE beatmap_id = %s",
         [token.tillerino[0]],
     )
@@ -278,6 +278,22 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
 
     if res["ranked"] == status:
         return f"That map is already {status_readable}!"
+
+    beatmap_mode = res["mode"]
+    is_global_bn = token.privileges & privileges.ADMIN_MANAGE_BEATMAPS
+
+    mode_privs = {
+        0: privileges.ADMIN_MANAGE_STD_BEATMAPS,
+        1: privileges.ADMIN_MANAGE_TAIKO_BEATMAPS,
+        2: privileges.ADMIN_MANAGE_CTB_BEATMAPS,
+        3: privileges.ADMIN_MANAGE_MANIA_BEATMAPS,
+    }
+
+    required_priv = mode_privs[beatmap_mode]
+    if token.privileges & required_priv != required_priv and not is_global_bn:
+        return (
+            "You don't have the permissions to edit the ranked status of this beatmap."
+        )
 
     rank_id = res["beatmapset_id"] if set_check else token.tillerino[0]
 
@@ -981,7 +997,6 @@ def tillerinoAcc(fro, chan, message):
 
 @registerCommand(trigger="!last")
 def tillerinoLast(fro, chan, message):
-
     token = glob.tokens.getTokenFromUsername(fro)
     if token is None:
         return False
@@ -1669,7 +1684,6 @@ def multiplayer(fro, chan, message):
     privs=privileges.ADMIN_MANAGE_SERVERS,
 )
 def switchServer(fro, chan, message):
-
     newServer = message[0].strip()
     if not newServer:
         return "Invalid server IP"
@@ -1695,7 +1709,6 @@ def switchServer(fro, chan, message):
     privs=privileges.ADMIN_SEND_ALERTS,
 )
 def postAnnouncement(fro, chan, message):  # Post to #announce ingame
-
     chat.sendMessage(glob.BOT_NAME, "#announce", " ".join(message))
     return "Announcement successfully sent."
 
@@ -1951,7 +1964,6 @@ def help_cmd(fro, chan, message):
 
     help_cmd = []
     for idx, cmd in enumerate(cmd_blocks[index - 1]):  # In theory it should work
-
         # Make sure callback docstring is not none
         if not (docstr := cmd.callback.__doc__):
             docstr = "No description available."
@@ -1960,7 +1972,9 @@ def help_cmd(fro, chan, message):
         if cmd.syntax:
             name += f" {cmd.syntax}"
 
-        help_cmd.append(f"{1+idx+(CMD_PER_PAGE*(index-1))}. - {name} - {docstr}")
+        help_cmd.append(
+            f"{1 + idx + (CMD_PER_PAGE * (index - 1))}. - {name} - {docstr}"
+        )
 
     header = [
         f"--- {index} of {pages} pages of commands currently available on RealistikOsu! ---",
