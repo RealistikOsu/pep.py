@@ -289,18 +289,31 @@ def editMap(fro: str, chan: str, message: list[str]) -> str:
         3: privileges.ADMIN_MANAGE_MANIA_BEATMAPS,
     }
 
-    required_priv = mode_privs[beatmap_mode]
-    if token.privileges & required_priv != required_priv and not is_global_bn:
-        return (
-            "You don't have the permissions to edit the ranked status of this beatmap."
-        )
+    mode_filter = ""
+    if not set_check:
+        required_priv = mode_privs[beatmap_mode]
+        if token.privileges & required_priv != required_priv and not is_global_bn:
+            return "You don't have the permissions to edit the ranked status of this beatmap."
+    else:
+        if not is_global_bn:
+            rankable_modes = []
+
+            for mode in mode_privs.keys():
+                required_priv = mode_privs[mode]
+                if token.privileges & required_priv == required_priv:
+                    rankable_modes.append(mode)
+
+            if not rankable_modes:
+                return "You don't have the permissions to edit the ranked status of this beatmapset."
+
+            mode_filter = " AND mode IN (" + ",".join(map(str, rankable_modes)) + ")"
 
     rank_id = res["beatmapset_id"] if set_check else token.tillerino[0]
 
     # Update map's ranked status.
     glob.db.execute(
         "UPDATE beatmaps SET ranked = %s, ranked_status_freezed = 1, "
-        f"rankedby = %s WHERE {bmapset_or_bmap} = %s",
+        f"rankedby = %s WHERE {bmapset_or_bmap} = %s{mode_filter}",
         [status, token.userID, rank_id],
     )
 
