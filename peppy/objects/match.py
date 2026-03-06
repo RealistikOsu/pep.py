@@ -769,6 +769,14 @@ class Match:
 
         self.slots[slotID].passed = False
 
+        # In tag mode, failing means they are not playing anymore in that round
+        if (
+            self.matchTeamType == matchTeamTypes.TAG_COOP
+            or self.matchTeamType == matchTeamTypes.TAG_TEAM_VS
+        ):
+            self.slots[slotID].status = slotStatuses.NOT_READY
+            self.sendUpdates()
+
         # Send packet to everyone
         glob.streams.broadcast(
             self.playingStreamName,
