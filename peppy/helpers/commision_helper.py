@@ -65,8 +65,8 @@ def get_total_stats(user_id: int) -> dict[str, int]:
     """Get summed stats across all valid modes and sub-modes."""
     tables = {
         "users_stats": ["std", "taiko", "ctb", "mania"],
-        "rx_stats": ["std", "taiko", "ctb"], # Mania uses users_stats for RX
-        "ap_stats": ["std"] # Autopilot only for std
+        "rx_stats": ["std", "taiko", "ctb"],
+        "ap_stats": ["std"]
     }
     stats_to_sum = ["playcount", "total_score", "ranked_score", "pp", "playtime"]
 
@@ -146,13 +146,13 @@ def update_commission_progress(user_id: int) -> None:
 
     stats = get_total_stats(user_id)
 
-    # Check accuracy across all score tables
+    # Check accuracy across all score tables for scores submitted today
     last_score_acc = 0
     score_tables = ["scores", "scores_relax", "scores_ap"]
     for table in score_tables:
         res = glob.db.fetch(
-            f"SELECT accuracy FROM {table} WHERE userid = %s ORDER BY id DESC LIMIT 1",
-            (user_id,),
+            f"SELECT accuracy FROM {table} WHERE userid = %s AND DATE(FROM_UNIXTIME(time)) = %s ORDER BY id DESC LIMIT 1",
+            (user_id, today),
         )
         if res and res["accuracy"] > last_score_acc:
             last_score_acc = res["accuracy"]
