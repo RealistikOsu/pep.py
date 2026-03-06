@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from common.redis import generalPubSubHandler
 from objects import glob
-from helpers import commision_helper
+from helpers import commission_helper
 
 
 class handler(generalPubSubHandler.generalPubSubHandler):
@@ -17,4 +17,4 @@ class handler(generalPubSubHandler.generalPubSubHandler):
         targetToken = glob.tokens.getTokenFromUserID(userID)
         if targetToken is not None:
             targetToken.updateCachedStats()
-            commision_helper.update_commission_progress(userID)
+            commission_helper.update_commission_progress(userID)

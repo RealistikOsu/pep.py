@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS user_commissions (
     completed TINYINT(1) DEFAULT 0,
     start_value BIGINT DEFAULT 0,
     date DATE NOT NULL,
-    UNIQUE KEY (user_id, name, date)
+    UNIQUE KEY (user_id, name, date),
+    INDEX (user_id, date)
 );
 
 CREATE TABLE IF NOT EXISTS user_daily_bonus (
@@ -38,4 +39,9 @@ CREATE TABLE IF NOT EXISTS user_daily_bonus (
     date DATE NOT NULL,
     claimed TINYINT(1) DEFAULT 0,
     PRIMARY KEY (user_id, date)
+);
+
+CREATE TABLE IF NOT EXISTS user_commission_claims (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    commission_id INT NOT NULL UNIQUE
 );

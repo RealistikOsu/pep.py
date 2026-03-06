@@ -31,7 +31,7 @@ from constants import serverPackets
 from constants import slotStatuses
 from discord_webhook import DiscordEmbed
 from discord_webhook import DiscordWebhook
-from helpers import commision_helper
+from helpers import commission_helper
 from helpers import chatHelper as chat
 from helpers import systemHelper
 from helpers import user_helper
@@ -1974,7 +1974,7 @@ def commissions_cmd(fro, chan, message):
     if not user:
         return False
 
-    return commision_helper.get_commission_status(user.userID)
+    return commission_helper.get_commission_status(user.userID)
 
 
 @registerCommand(trigger="!coins")
@@ -1984,7 +1984,7 @@ def coins_cmd(fro, chan, message):
     if not user:
         return False
 
-    coins = commision_helper.get_current_coins(user.userID)
+    coins = commission_helper.get_current_coins(user.userID)
     if coins is None:
         return "You have no coins."
 
