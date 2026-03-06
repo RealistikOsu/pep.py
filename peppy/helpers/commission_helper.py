@@ -230,32 +230,38 @@ def check_daily_bonus(user_id: int) -> None:
     if completed_count >= 4:
         bonus_reward = 20
 
-        bonus_claim_id = glob.db.execute(
-            "INSERT IGNORE INTO user_daily_bonus_claims (user_id, date) VALUES (%s, %s)",
-            (user_id, today),
-        )
+        try:
+            glob.db.execute("START TRANSACTION")
 
-        if bonus_claim_id > 0:
-            glob.db.execute(
-                "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
+            bonus_claim_id = glob.db.execute(
+                "INSERT IGNORE INTO user_daily_bonus_claims (user_id, date) VALUES (%s, %s)",
                 (user_id, today),
             )
 
-            handle_award_coins_routine(
-                user_id,
-                bonus_reward,
-                "completing all daily commissions",
-            )
-
-            user = glob.tokens.getTokenFromUserID(user_id)
-            if user:
-                chat.sendMessage(
-                    glob.BOT_NAME,
-                    token=user,
-                    message="Congratulations! You've completed all daily commissions and received a bonus reward!",
+            if bonus_claim_id > 0:
+                glob.db.execute(
+                    "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
+                    (user_id, today),
                 )
 
+                handle_award_coins_routine(
+                    user_id,
+                    bonus_reward,
+                    "completing all daily commissions",
+                )
 
+            glob.db.execute("COMMIT")
+        except Exception:
+            glob.db.execute("ROLLBACK")
+            raise
+
+        user = glob.tokens.getTokenFromUserID(user_id)
+        if user:
+            chat.sendMessage(
+                glob.BOT_NAME,
+                token=user,
+                message="Congratulations! You've completed all daily commissions and received a bonus reward!",
+            )
 def get_commission_status(user_id: int) -> str:
     today = date.today()
     assign_daily_commissions(user_id)
