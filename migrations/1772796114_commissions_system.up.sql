@@ -45,3 +45,10 @@ CREATE TABLE IF NOT EXISTS user_commission_claims (
     id INT AUTO_INCREMENT PRIMARY KEY,
     commission_id INT NOT NULL UNIQUE
 );
+
+CREATE TABLE IF NOT EXISTS user_daily_bonus_claims (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    date DATE NOT NULL,
+    UNIQUE KEY (user_id, date)
+);

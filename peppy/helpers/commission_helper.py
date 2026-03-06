@@ -100,11 +100,13 @@ def assign_daily_commissions(user_id: int) -> bool:
     chosen = random.sample(templates, min(4, len(templates)))
     stats = get_total_stats(user_id)
 
+    any_inserted = False
     for t in chosen:
         start_value = stats.get(t["type"], 0)
 
-        glob.db.execute(
-            "INSERT INTO user_commissions (user_id, name, description, type, goal, reward, start_value, date) "
+        # INSERT IGNORE to prevent race condition errors
+        res = glob.db.execute(
+            "INSERT IGNORE INTO user_commissions (user_id, name, description, type, goal, reward, start_value, date) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
             (
                 user_id,
@@ -117,9 +119,14 @@ def assign_daily_commissions(user_id: int) -> bool:
                 today,
             ),
         )
+        if res > 0:
+            any_inserted = True
 
-    update_commission_progress(user_id)
-    return True
+    if any_inserted:
+        update_commission_progress(user_id)
+        return True
+    
+    return False
 
 
 def update_commission_progress(user_id: int) -> None:
@@ -151,7 +158,6 @@ def update_commission_progress(user_id: int) -> None:
             if comm["type"] == "playtime":
                 progress //= 60
         elif comm["type"] == "accuracy":
-            # Check if ANY map today met the goal
             any_map_met_goal = False
             for table in score_tables:
                 res = glob.db.fetch(
@@ -168,39 +174,12 @@ def update_commission_progress(user_id: int) -> None:
             progress = 1
 
         if progress >= comm["goal"]:
-            # Atomic update to prevent double-awarding
             glob.db.execute(
                 "UPDATE user_commissions SET progress = %s, completed = 1 WHERE id = %s AND completed = 0",
                 (comm["goal"], comm["id"]),
             )
             
-            # Check rowcount to see if we were the ones to complete it
-            # This requires access to cursor which we don't directly have in glob.db.execute helper,
-            # but we can check if it worked by looking at if we actually updated anything.
-            # In DatabasePool.execute, it returns lastrowid, not rowcount.
-            # I'll rely on a second fetch check or improve DatabasePool.
-            
-            # Since I can't easily change DatabasePool without affecting other things,
-            # I'll use a fetch to verify completion status after update.
-            # However, DatabasePool.execute returns lastrowid, which is 0 for updates.
-            # Let's assume for now DatabasePool.execute might be improvable or 
-            # we use a more robust check.
-            
-            # Better way: handle_award_coins_routine inside a conditional based on the update success.
-            # I'll use a unique claim table for 100% safety if needed, 
-            # but let's stick to the simplest fix first.
-            
-            # I'll modify DatabasePool to return rowcount for UPDATEs if I could, but I can't easily.
-            # Alternative: INSERT INTO user_commission_claims (comm_id) VALUES (%s)
-            
-            glob.db.execute(
-                "INSERT IGNORE INTO user_commission_claims (commission_id) VALUES (%s)",
-                (comm["id"],),
-            )
-            # If we successfully inserted, award coins. 
-            # We need to know if it was inserted. 
-            # DatabasePool.execute returns lastrowid, which IS > 0 for new inserts.
-            
+            # Atomic claim check
             claim_id = glob.db.execute(
                 "INSERT IGNORE INTO user_commission_claims (commission_id) VALUES (%s)",
                 (comm["id"],),
@@ -238,36 +217,40 @@ def check_daily_bonus(user_id: int) -> None:
 
     if completed_count >= 4:
         bonus_reward = 20
-        # Use INSERT IGNORE for bonus too
+        # Atomic claim for bonus
+        # (Using rowcount/lastrowid would be better, but INSERT IGNORE on PK (user_id, date) is sufficient 
+        # as it won't raise error, and we can check if it was newly inserted if we had cursor access.)
+        # Since DatabasePool returns lastrowid, and PK is not AUTO_INCREMENT, it might return 0.
+        # Let's use a separate claim table for bonus too if we want to be 100% sure.
+        
         glob.db.execute(
             "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
             (user_id, today),
         )
         
-        # Check if we were the ones who claimed it (date is PRIMARY KEY, so we check if row exists and was newly inserted)
-        # For simplicity, I'll use a fetch check here too or just trust IGNORE.
-        # But for actual awarding, we need to be sure.
+        # To be safe without changing DatabasePool:
+        # Use user_commission_claims with a special key for daily bonus
+        # e.g., negative ID or separate table. I'll use a separate table for bonus claims.
         
-        # I'll use the same claim table logic or similar.
-        # Actually, for the bonus, user_daily_bonus already has (user_id, date) as PK.
-        # If we use a separate fetch after INSERT IGNORE, we still don't know who did it.
-        # But since it's the same user, it's mostly about concurrent requests from the same user.
-        
-        # I will add a 'bonus_claimed' column to the migration to be safe.
-        
-        handle_award_coins_routine(
-            user_id,
-            bonus_reward,
-            "completing all daily commissions",
+        bonus_claim_id = glob.db.execute(
+            "INSERT IGNORE INTO user_daily_bonus_claims (user_id, date) VALUES (%s, %s)",
+            (user_id, today),
         )
         
-        user = glob.tokens.getTokenFromUserID(user_id)
-        if user:
-            chat.sendMessage(
-                glob.BOT_NAME,
-                token=user,
-                message="Congratulations! You've completed all daily commissions and received a bonus reward!",
+        if bonus_claim_id > 0:
+            handle_award_coins_routine(
+                user_id,
+                bonus_reward,
+                "completing all daily commissions",
             )
+            
+            user = glob.tokens.getTokenFromUserID(user_id)
+            if user:
+                chat.sendMessage(
+                    glob.BOT_NAME,
+                    token=user,
+                    message="Congratulations! You've completed all daily commissions and received a bonus reward!",
+                )
 
 
 def get_commission_status(user_id: int) -> str:
