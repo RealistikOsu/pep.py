@@ -151,7 +151,7 @@ def update_commission_progress(user_id: int) -> None:
     score_tables = ["scores", "scores_relax", "scores_ap"]
     for table in score_tables:
         res = glob.db.fetch(
-            f"SELECT accuracy FROM {table} WHERE userid = %s AND DATE(FROM_UNIXTIME(time)) = %s ORDER BY id DESC LIMIT 1",
+            f"SELECT accuracy FROM {table} WHERE userid = %s AND completed = 3 AND DATE(FROM_UNIXTIME(time)) = %s ORDER BY id DESC LIMIT 1",
             (user_id, today),
         )
         if res and res["accuracy"] > last_score_acc:
