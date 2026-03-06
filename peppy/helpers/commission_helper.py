@@ -23,7 +23,7 @@ def get_current_coins(user_id: int) -> Optional[int]:
 
 
 def award_coins(user_id: int, quantity: int) -> int:
-    """Atomic coin increment. Returns new balance."""
+    """Increment coins and return the new balance (best effort)."""
     glob.db.execute(
         "UPDATE users SET coins = coins + %s WHERE id = %s",
         (quantity, user_id),
@@ -175,7 +175,6 @@ def update_commission_progress(user_id: int) -> None:
         elif comm["type"] == "accuracy":
             any_map_met_goal = False
             for table in score_tables:
-                # Optimized range query
                 res = glob.db.fetch(
                     f"SELECT id FROM {table} WHERE userid = %s AND completed = 3 AND accuracy >= %s AND time >= %s AND time < %s LIMIT 1",
                     (user_id, comm["goal"], day_start, day_end),
@@ -218,11 +217,12 @@ def update_commission_progress(user_id: int) -> None:
 def check_daily_bonus(user_id: int) -> None:
     today = date.today()
 
-    bonus = glob.db.fetch(
-        "SELECT * FROM user_daily_bonus WHERE user_id = %s AND date = %s",
+    # Claim table is the single source of truth for awarding
+    bonus_claimed = glob.db.fetch(
+        "SELECT id FROM user_daily_bonus_claims WHERE user_id = %s AND date = %s",
         (user_id, today),
     )
-    if bonus:
+    if bonus_claimed:
         return
 
     completed_count = glob.db.fetch(
@@ -232,17 +232,20 @@ def check_daily_bonus(user_id: int) -> None:
 
     if completed_count >= 4:
         bonus_reward = 20
-        glob.db.execute(
-            "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
-            (user_id, today),
-        )
 
+        # Attempt atomic claim
         bonus_claim_id = glob.db.execute(
             "INSERT IGNORE INTO user_daily_bonus_claims (user_id, date) VALUES (%s, %s)",
             (user_id, today),
         )
 
         if bonus_claim_id > 0:
+            # Successfully claimed, now mark in visual table and award
+            glob.db.execute(
+                "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
+                (user_id, today),
+            )
+
             handle_award_coins_routine(
                 user_id,
                 bonus_reward,

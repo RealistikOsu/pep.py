@@ -466,7 +466,9 @@ def handle(tornadoRequest):
         log.info(f"Authentication attempt took {t_str}!")
 
         if not isTournament:
-            if commission_helper.assign_daily_commissions(userID):
+            new_assigned = commission_helper.assign_daily_commissions(userID)
+            commission_helper.update_commission_progress(userID)
+            if new_assigned:
                 responseToken.enqueue(
                     serverPackets.notification(
                         "You have new daily commissions! Type !commissions to check them.",
