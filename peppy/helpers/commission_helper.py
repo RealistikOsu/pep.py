@@ -110,7 +110,6 @@ def assign_daily_commissions(user_id: int) -> bool:
     if not templates:
         return False
 
-    # Exclude already assigned templates for today
     existing_names = {e["name"] for e in existing}
     available_templates = [t for t in templates if t["name"] not in existing_names]
 
@@ -217,7 +216,6 @@ def update_commission_progress(user_id: int) -> None:
 def check_daily_bonus(user_id: int) -> None:
     today = date.today()
 
-    # Claim table is the single source of truth for awarding
     bonus_claimed = glob.db.fetch(
         "SELECT id FROM user_daily_bonus_claims WHERE user_id = %s AND date = %s",
         (user_id, today),
@@ -233,14 +231,12 @@ def check_daily_bonus(user_id: int) -> None:
     if completed_count >= 4:
         bonus_reward = 20
 
-        # Attempt atomic claim
         bonus_claim_id = glob.db.execute(
             "INSERT IGNORE INTO user_daily_bonus_claims (user_id, date) VALUES (%s, %s)",
             (user_id, today),
         )
 
         if bonus_claim_id > 0:
-            # Successfully claimed, now mark in visual table and award
             glob.db.execute(
                 "INSERT IGNORE INTO user_daily_bonus (user_id, date, claimed) VALUES (%s, %s, 1)",
                 (user_id, today),
@@ -279,7 +275,7 @@ def get_commission_status(user_id: int) -> str:
         )
 
     bonus = glob.db.fetch(
-        "SELECT * FROM user_daily_bonus WHERE user_id = %s AND date = %s",
+        "SELECT id FROM user_daily_bonus_claims WHERE user_id = %s AND date = %s",
         (user_id, today),
     )
     bonus_check = "X" if bonus else " "
