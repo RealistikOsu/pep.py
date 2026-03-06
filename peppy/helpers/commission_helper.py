@@ -145,7 +145,6 @@ def assign_daily_commissions(user_id: int) -> bool:
             any_inserted = True
 
     if any_inserted:
-        update_commission_progress(user_id)
         return True
 
     return False
