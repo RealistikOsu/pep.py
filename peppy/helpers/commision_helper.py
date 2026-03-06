@@ -61,6 +61,43 @@ def handle_award_coins_routine(
     )
 
 
+def get_total_stats(user_id: int) -> dict[str, int]:
+    """Get summed stats across all modes and sub-modes."""
+    tables = ["users_stats", "rx_stats", "ap_stats"]
+    modes = ["std", "taiko", "ctb", "mania"]
+    stats_to_sum = ["playcount", "total_score", "ranked_score", "pp", "playtime"]
+
+    total_stats = {s: 0 for s in stats_to_sum}
+
+    for table in tables:
+        # Check if table exists (ap_stats might not have all modes, etc.)
+        # But we'll just try to fetch and sum.
+        # Construct the query for all 4 modes in one go for efficiency.
+        cols = []
+        for s in stats_to_sum:
+            for m in modes:
+                cols.append(f"SUM({s}_{m}) as {s}_{m}")
+        
+        # Actually, SUM() over multiple columns in one row doesn't make sense,
+        # we just want to sum the columns for this specific user.
+        cols = []
+        for s in stats_to_sum:
+            for m in modes:
+                cols.append(f"{s}_{m}")
+        
+        query = f"SELECT {', '.join(cols)} FROM {table} WHERE id = %s"
+        row = glob.db.fetch(query, (user_id,))
+        
+        if row:
+            for s in stats_to_sum:
+                for m in modes:
+                    val = row.get(f"{s}_{m}")
+                    if val:
+                        total_stats[s] += int(val)
+    
+    return total_stats
+
+
 def assign_daily_commissions(user_id: int) -> list[dict[str, Any]]:
     today = date.today()
 
@@ -76,33 +113,10 @@ def assign_daily_commissions(user_id: int) -> list[dict[str, Any]]:
         return []
 
     chosen = random.sample(templates, min(4, len(templates)))
-
-    stats = glob.db.fetch(
-        "SELECT playcount_std, total_score_std, ranked_score_std, pp_std, playtime_std FROM users_stats WHERE id = %s",
-        (user_id,),
-    )
-
-    if not stats:
-        stats = {
-            "playcount_std": 0,
-            "total_score_std": 0,
-            "ranked_score_std": 0,
-            "pp_std": 0,
-            "playtime_std": 0,
-        }
+    stats = get_total_stats(user_id)
 
     for t in chosen:
-        start_value = 0
-        if t["type"] == "playcount":
-            start_value = stats["playcount_std"]
-        elif t["type"] == "total_score":
-            start_value = stats["total_score_std"]
-        elif t["type"] == "ranked_score":
-            start_value = stats["ranked_score_std"]
-        elif t["type"] == "pp":
-            start_value = stats["pp_std"]
-        elif t["type"] == "playtime":
-            start_value = stats["playtime_std"]
+        start_value = stats.get(t["type"], 0)
 
         glob.db.execute(
             "INSERT INTO user_commissions (user_id, name, description, type, goal, reward, start_value, date) "
@@ -119,7 +133,6 @@ def assign_daily_commissions(user_id: int) -> list[dict[str, Any]]:
             ),
         )
 
-    # Automatically check for 'login' type commissions upon assignment
     update_commission_progress(user_id)
 
     return glob.db.fetchAll(
@@ -138,32 +151,27 @@ def update_commission_progress(user_id: int) -> None:
     if not commissions:
         return
 
-    stats = glob.db.fetch(
-        "SELECT playcount_std, total_score_std, ranked_score_std, pp_std, playtime_std FROM users_stats WHERE id = %s",
-        (user_id,),
-    )
-    if not stats:
-        return
+    stats = get_total_stats(user_id)
 
-    last_score = glob.db.fetch(
-        "SELECT accuracy FROM scores WHERE userid = %s ORDER BY id DESC LIMIT 1",
-        (user_id,),
-    )
+    # Check accuracy across all score tables
+    last_score_acc = 0
+    score_tables = ["scores", "scores_relax", "scores_ap"]
+    for table in score_tables:
+        res = glob.db.fetch(
+            f"SELECT accuracy FROM {table} WHERE userid = %s ORDER BY id DESC LIMIT 1",
+            (user_id,),
+        )
+        if res and res["accuracy"] > last_score_acc:
+            last_score_acc = res["accuracy"]
 
     for comm in commissions:
         progress = 0
-        if comm["type"] == "playcount":
-            progress = stats["playcount_std"] - comm["start_value"]
-        elif comm["type"] == "total_score":
-            progress = stats["total_score_std"] - comm["start_value"]
-        elif comm["type"] == "ranked_score":
-            progress = stats["ranked_score_std"] - comm["start_value"]
-        elif comm["type"] == "pp":
-            progress = int(stats["pp_std"] - comm["start_value"])
-        elif comm["type"] == "playtime":
-            progress = (stats["playtime_std"] - comm["start_value"]) // 60
+        if comm["type"] in stats:
+            progress = stats[comm["type"]] - comm["start_value"]
+            if comm["type"] == "playtime":
+                progress //= 60 # Seconds to minutes
         elif comm["type"] == "accuracy":
-            if last_score and last_score["accuracy"] >= comm["goal"]:
+            if last_score_acc >= comm["goal"]:
                 progress = comm["goal"]
         elif comm["type"] == "login":
             progress = 1
