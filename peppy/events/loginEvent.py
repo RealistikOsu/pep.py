@@ -12,6 +12,7 @@ from common.ripple import userUtils
 from common.ripple.userUtils import restrict_with_log
 from constants import exceptions
 from constants import serverPackets
+from helpers import commision_helper
 from helpers import chatHelper as chat
 from helpers import geo_helper
 from helpers.timing import Timer
@@ -464,7 +465,14 @@ def handle(tornadoRequest):
 
         log.info(f"Authentication attempt took {t_str}!")
 
-        # Set reponse data to right value and reset our queue
+        if not isTournament:
+            commision_helper.assign_daily_commissions(userID)
+            responseToken.enqueue(
+                serverPackets.notification(
+                    "You have new daily commissions! Type !commissions to check them.",
+                ),
+            )
+
         responseData = responseToken.fetch_queue()
     except exceptions.loginFailedException:
         # Login failed error packet
