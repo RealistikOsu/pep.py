@@ -1587,6 +1587,25 @@ def multiplayer(fro, chan, message):
         _match.changePassword(password)
         return "Match password has been changed to a random one"
 
+    def mpSit():
+        _match = glob.matches.matches[getMatchIDFromChannel(chan)]
+        slotID = _match.getUserSlotID(token.userID)
+        if slotID is None:
+            return False
+        _match.slots[slotID].is_sitting = True
+        _match.slots[slotID].status = slotStatuses.NOT_READY
+        _match.sendUpdates()
+        return f"{token.username} is now sitting out."
+
+    def mpPlay():
+        _match = glob.matches.matches[getMatchIDFromChannel(chan)]
+        slotID = _match.getUserSlotID(token.userID)
+        if slotID is None:
+            return False
+        _match.slots[slotID].is_sitting = False
+        _match.sendUpdates()
+        return f"{token.username} is now playing."
+
     def mpMods():
         if len(message) < 2:
             raise exceptions.invalidArgumentsException(
@@ -1669,6 +1688,10 @@ def multiplayer(fro, chan, message):
                 readableStatus = "???"
             else:
                 readableStatus = readableStatuses[slot.status]
+            
+            if slot.is_sitting:
+                readableStatus += " (sitting)"
+                
             empty = False
             msg += "* [{team}] <{status}> ~ {username}{mods}{nl}".format(
                 team="red"
@@ -1721,6 +1744,8 @@ def multiplayer(fro, chan, message):
             "kick": mpKick,
             "password": mpPassword,
             "randompassword": mpRandomPassword,
+            "sit": mpSit,
+            "play": mpPlay,
             "mods": mpMods,
             "team": mpTeam,
             "settings": mpSettings,

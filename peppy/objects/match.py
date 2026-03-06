@@ -30,6 +30,7 @@ class Slot:
         self.userID = -1
         self.user = None
         self.mods = 0
+        self.is_sitting = False
         self.loaded = False
         self.skip = False
         self.complete = False
@@ -900,6 +901,7 @@ class Match:
             if (
                 self.slots[i].user is not None
                 and (self.slots[i].status & slotStatuses.NO_MAP) == 0
+                and not self.slots[i].is_sitting
             ):
                 if firstTeam == -1:
                     firstTeam = self.slots[i].team
@@ -928,7 +930,7 @@ class Match:
         # Set playing to ready players and set load, skip and complete to False
         # Make clients join playing stream
         for i in range(0, 16):
-            if self.slots[i].user in glob.tokens.tokens:
+            if self.slots[i].user in glob.tokens.tokens and not self.slots[i].is_sitting:
                 self.slots[i].status = slotStatuses.PLAYING
                 self.slots[i].loaded = False
                 self.slots[i].skip = False
