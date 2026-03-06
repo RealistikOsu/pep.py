@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 
 from common import generalUtils
+from common.constants import mods
 from constants import clientPackets
 from constants import matchModModes
 from constants import matchTeams
@@ -78,19 +79,12 @@ def handle(userToken, packetData):
             # Reset slot mods if not freeMods
             match.resetMods()
         else:
-            # Reset match mods if freemod
-            match.mods = 0
+            # Reset match mods if freemod (keep only DT/HT/NC)
+            match.mods &= mods.DOUBLETIME | mods.HALFTIME | mods.NIGHTCORE
 
         # Initialize teams if team type changed
         if match.matchTeamType != oldMatchTeamType:
             match.initializeTeams()
-
-        # Force no freemods if tag coop
-        if (
-            match.matchTeamType == matchTeamTypes.TAG_COOP
-            or match.matchTeamType == matchTeamTypes.TAG_TEAM_VS
-        ):
-            match.matchModMode = matchModModes.NORMAL
 
         # Send updated settings
         match.sendUpdates()

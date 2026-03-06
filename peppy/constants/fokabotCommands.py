@@ -421,6 +421,9 @@ def moderated(fro, chan, message):
         if not chan.startswith("#"):
             raise exceptions.moderatedPMException
 
+        if chan.startswith("#multi_"):
+            return "Moderated mode cannot be enabled on multiplayer channels."
+
         # Get on/off
         enable = True
         if len(message) >= 1:
@@ -1222,14 +1225,12 @@ def mpAbort(fro, chan, message):
 
     if _match.hostUserID != token.userID:
         return "Only the host can abort the game."
-    
-    if not _match.inProgress:
-        return "Match is not in progress." 
 
-    _match.allPlayersCompleted()
-    return (
-        "Match has been aborted!"
-    )
+    if not _match.inProgress:
+        return "Match is not in progress."
+
+    _match.abort()
+    return "Match has been aborted!"
 
 @registerCommand(
     "!mp start",
@@ -1307,12 +1308,20 @@ def mpStart(fro, chan, message):
 @registerCommand(
     trigger="!mp",
     syntax="<subcommand>",
-    privs=privileges.USER_TOURNAMENT_STAFF,
 )
 def multiplayer(fro, chan, message):
     """All the multiplayer subcommands."""
 
+    token = glob.tokens.getTokenFromUsername(fro)
+    if token is None:
+        return False
+
+    isStaff = bool(token.privileges & privileges.USER_TOURNAMENT_STAFF)
+
     def mpMake():
+        if not isStaff:
+            return "Only tournament staff can use !mp make."
+
         if len(message) < 2:
             raise exceptions.invalidArgumentsException("Wrong syntax: !mp make <name>")
         matchName = " ".join(message[1:]).strip()
@@ -1332,6 +1341,9 @@ def multiplayer(fro, chan, message):
         return f"Tourney match #{matchID} created!"
 
     def mpJoin():
+        if not isStaff:
+            return "Only tournament staff can use !mp join."
+
         if len(message) < 2 or not message[1].isdigit():
             raise exceptions.invalidArgumentsException("Wrong syntax: !mp join <id>")
         matchID = int(message[1])
@@ -1344,6 +1356,29 @@ def multiplayer(fro, chan, message):
             )
         userToken.joinMatch(matchID)
         return f"Attempting to join match #{matchID}!"
+
+    # Commands that require a match channel
+    requestedSubcommand = message[0].lower().strip()
+    if requestedSubcommand in ("make", "join"):
+        subcommands = {
+            "make": mpMake,
+            "join": mpJoin,
+        }
+        return subcommands[requestedSubcommand]()
+
+    matchID = getMatchIDFromChannel(chan)
+    if matchID is None:
+        return "This command only works in multiplayer chat channels"
+
+    _match = glob.matches.matches.get(matchID)
+    if _match is None:
+        return "Match not found"
+
+    # Only allow if the user is the host OR tournament staff.
+    isHost = _match.hostUserID == token.userID
+
+    if not isStaff and not isHost:
+        return "Only the host or tournament staff can use !mp commands."
 
     def mpClose():
         matchID = getMatchIDFromChannel(chan)
@@ -1510,11 +1545,6 @@ def multiplayer(fro, chan, message):
             _match.forceSize(int(message[3]))
         if _match.matchTeamType != oldMatchTeamType:
             _match.initializeTeams()
-        if (
-            _match.matchTeamType == matchTeamTypes.TAG_COOP
-            or _match.matchTeamType == matchTeamTypes.TAG_TEAM_VS
-        ):
-            _match.matchModMode = matchModModes.NORMAL
 
         _match.sendUpdates()
         return "Match settings have been updated!"
@@ -1751,8 +1781,8 @@ def postAnnouncement(fro, chan, message):  # Post to #announce ingame
 @registerCommand(trigger="!chimu")
 def chimu(fro, chan, message):
     """Gets a download URL for the beatmap from Chimu."""
-    user_id = getMatchIDFromChannel(chan)
-    match_id = getSpectatorHostUserIDFromChannel(chan)
+    match_id = getMatchIDFromChannel(chan)
+    user_id = getSpectatorHostUserIDFromChannel(chan)
 
     if match_id:
         if match_id not in glob.matches.matches:
@@ -1781,8 +1811,8 @@ def chimu(fro, chan, message):
 @registerCommand(trigger="!beatconnect")
 def beatconnect(fro, chan, message):
     """Gets a download URL for the beatmap from Beatconnect."""
-    user_id = getMatchIDFromChannel(chan)
-    match_id = getSpectatorHostUserIDFromChannel(chan)
+    match_id = getMatchIDFromChannel(chan)
+    user_id = getSpectatorHostUserIDFromChannel(chan)
 
     if match_id:
         if match_id not in glob.matches.matches:
@@ -1811,8 +1841,8 @@ def beatconnect(fro, chan, message):
 @registerCommand(trigger="!mirror")
 def mirror(fro, chan, message):
     """Gets a download URL for the beatmap from various mirrors."""
-    user_id = getMatchIDFromChannel(chan)
-    match_id = getSpectatorHostUserIDFromChannel(chan)
+    match_id = getMatchIDFromChannel(chan)
+    user_id = getSpectatorHostUserIDFromChannel(chan)
 
     if match_id:
         if match_id not in glob.matches.matches:
