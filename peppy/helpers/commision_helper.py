@@ -62,24 +62,17 @@ def handle_award_coins_routine(
 
 
 def get_total_stats(user_id: int) -> dict[str, int]:
-    """Get summed stats across all modes and sub-modes."""
-    tables = ["users_stats", "rx_stats", "ap_stats"]
-    modes = ["std", "taiko", "ctb", "mania"]
+    """Get summed stats across all valid modes and sub-modes."""
+    tables = {
+        "users_stats": ["std", "taiko", "ctb", "mania"],
+        "rx_stats": ["std", "taiko", "ctb"], # Mania uses users_stats for RX
+        "ap_stats": ["std"] # Autopilot only for std
+    }
     stats_to_sum = ["playcount", "total_score", "ranked_score", "pp", "playtime"]
 
     total_stats = {s: 0 for s in stats_to_sum}
 
-    for table in tables:
-        # Check if table exists (ap_stats might not have all modes, etc.)
-        # But we'll just try to fetch and sum.
-        # Construct the query for all 4 modes in one go for efficiency.
-        cols = []
-        for s in stats_to_sum:
-            for m in modes:
-                cols.append(f"SUM({s}_{m}) as {s}_{m}")
-        
-        # Actually, SUM() over multiple columns in one row doesn't make sense,
-        # we just want to sum the columns for this specific user.
+    for table, modes in tables.items():
         cols = []
         for s in stats_to_sum:
             for m in modes:
