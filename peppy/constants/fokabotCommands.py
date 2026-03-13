@@ -31,6 +31,7 @@ from constants import serverPackets
 from constants import slotStatuses
 from discord_webhook import DiscordEmbed
 from discord_webhook import DiscordWebhook
+from helpers import commission_helper
 from helpers import chatHelper as chat
 from helpers import systemHelper
 from helpers import user_helper
@@ -1994,6 +1995,30 @@ def py(fro: str, chan: str, message: str) -> str:
         ret = pprint.pformat(ret, compact=True)
 
     return ret
+
+
+@registerCommand(trigger="!commissions")
+def commissions_cmd(fro, chan, message):
+    """Shows your daily commissions progress!"""
+    user = glob.tokens.getTokenFromUsername(fro)
+    if not user:
+        return False
+
+    return commission_helper.get_commission_status(user.userID)
+
+
+@registerCommand(trigger="!coins")
+def coins_cmd(fro, chan, message):
+    """Shows how many coins you currently have!"""
+    user = glob.tokens.getTokenFromUsername(fro)
+    if not user:
+        return False
+
+    coins = commission_helper.get_current_coins(user.userID)
+    if coins is None:
+        return "You have no coins."
+
+    return f"You currently have {coins} coins!"
 
 
 CMD_PER_PAGE = 5
